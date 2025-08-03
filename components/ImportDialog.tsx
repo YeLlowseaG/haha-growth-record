@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, MessageCircle, AlertCircle, Settings } from 'lucide-react';
+import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap } from 'lucide-react';
 import { Conversation } from '@/types';
+import { AIService } from '@/lib/ai-service';
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ interface ProcessingOptions {
   mergeShortLines: boolean;
   extractDates: boolean;
   autoTag: boolean;
+  useAI: boolean;
+  preferredAPI: 'qwen' | 'deepseek';
 }
 
 export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
@@ -26,6 +29,14 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     mergeShortLines: true,
     extractDates: true,
     autoTag: true,
+    useAI: true,
+    preferredAPI: 'qwen',
+  });
+
+  // 初始化AI服务
+  const aiService = new AIService({
+    qwenKey: 'sk-4b37b09662a44a90bb62a953d0f22aed',
+    deepseekKey: 'sk-b86a70e55ae5489497b0e6980130e481',
   });
 
   // 智能分割文本为句子
@@ -174,59 +185,41 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     return tags;
   };
 
-  const processText = () => {
+  const processText = async () => {
     if (!text.trim()) return;
 
     setIsProcessing(true);
     
     try {
-      let processedLines: string[] = [];
+      let memories: Conversation[] = [];
 
-      if (options.splitBySentences) {
-        // 按句子分割
-        const sentences = splitIntoSentences(text);
-        // 合并相关对话
-        processedLines = mergeRelatedConversations(sentences);
-      } else {
-        // 按行分割
-        processedLines = text.split('\n').filter(line => line.trim());
-      }
-
-      if (options.mergeShortLines && !options.splitBySentences) {
-        // 合并短行（仅在按行分割时使用）
-        processedLines = mergeShortLines(processedLines);
-      }
-
-      const memories: Conversation[] = [];
-      
-      processedLines.forEach((line, index) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine) {
-          // 提取日期
-          const { date, cleanText } = options.extractDates ? extractDate(trimmedLine) : {
-            date: new Date().toISOString().split('T')[0],
-            cleanText: trimmedLine
-          };
-
-          // 生成标签
-          const tags = options.autoTag ? generateTags(cleanText) : ['导入', '哈哈'];
-
-          const memory: Conversation = {
+      if (options.useAI) {
+        // 使用AI处理
+        try {
+          const aiResults = await aiService.processText(text, options.preferredAPI);
+          
+          memories = aiResults.map((result, index) => ({
             id: crypto.randomUUID(),
             type: 'conversation',
             title: `哈哈的对话 ${index + 1}`,
-            content: cleanText,
-            date: date,
-            tags: tags,
+            content: result.content,
+            date: result.date || new Date().toISOString().split('T')[0],
+            tags: result.tags,
             childName: '哈哈',
             age: '',
-            context: '',
+            context: result.context || '',
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),
-          };
-          memories.push(memory);
+          }));
+        } catch (aiError) {
+          console.error('AI处理失败，使用备用方法:', aiError);
+          // 如果AI处理失败，使用传统方法
+          memories = processWithTraditionalMethod();
         }
-      });
+      } else {
+        // 使用传统方法处理
+        memories = processWithTraditionalMethod();
+      }
       
       setPreview(memories);
     } catch (error) {
@@ -235,6 +228,58 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const processWithTraditionalMethod = (): Conversation[] => {
+    let processedLines: string[] = [];
+
+    if (options.splitBySentences) {
+      // 按句子分割
+      const sentences = splitIntoSentences(text);
+      // 合并相关对话
+      processedLines = mergeRelatedConversations(sentences);
+    } else {
+      // 按行分割
+      processedLines = text.split('\n').filter(line => line.trim());
+    }
+
+    if (options.mergeShortLines && !options.splitBySentences) {
+      // 合并短行（仅在按行分割时使用）
+      processedLines = mergeShortLines(processedLines);
+    }
+
+    const memories: Conversation[] = [];
+    
+    processedLines.forEach((line, index) => {
+      const trimmedLine = line.trim();
+      if (trimmedLine) {
+        // 提取日期
+        const { date, cleanText } = options.extractDates ? extractDate(trimmedLine) : {
+          date: new Date().toISOString().split('T')[0],
+          cleanText: trimmedLine
+        };
+
+        // 生成标签
+        const tags = options.autoTag ? generateTags(cleanText) : ['导入', '哈哈'];
+
+        const memory: Conversation = {
+          id: crypto.randomUUID(),
+          type: 'conversation',
+          title: `哈哈的对话 ${index + 1}`,
+          content: cleanText,
+          date: date,
+          tags: tags,
+          childName: '哈哈',
+          age: '',
+          context: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        memories.push(memory);
+      }
+    });
+
+    return memories;
   };
 
   const handleImport = () => {
@@ -278,7 +323,8 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 <h3 className="text-sm font-medium text-blue-900 mb-2">智能导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
-                  <li>• 系统会智能识别句子、日期和上下文</li>
+                  <li>• 可选择使用AI智能处理或传统方法处理</li>
+                  <li>• AI会智能识别句子、日期、上下文和情感</li>
                   <li>• 自动合并相关的对话，保持对话的完整性</li>
                   <li>• 支持多种日期格式：2024年1月1日、1月1日、2024-01-01等</li>
                   <li>• 自动生成相关标签，如"好奇"、"兴奋"、"家人"等</li>
@@ -297,8 +343,21 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
+                  checked={options.useAI}
+                  onChange={(e) => setOptions({...options, useAI: e.target.checked})}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-700 flex items-center">
+                  <Brain className="h-4 w-4 mr-1" />
+                  AI智能处理
+                </span>
+              </label>
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
                   checked={options.splitBySentences}
                   onChange={(e) => setOptions({...options, splitBySentences: e.target.checked})}
+                  disabled={options.useAI}
                   className="rounded"
                 />
                 <span className="text-sm text-gray-700">智能分割并合并相关对话</span>
@@ -308,6 +367,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                   type="checkbox"
                   checked={options.mergeShortLines}
                   onChange={(e) => setOptions({...options, mergeShortLines: e.target.checked})}
+                  disabled={options.useAI}
                   className="rounded"
                 />
                 <span className="text-sm text-gray-700">合并短行</span>
@@ -317,6 +377,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                   type="checkbox"
                   checked={options.extractDates}
                   onChange={(e) => setOptions({...options, extractDates: e.target.checked})}
+                  disabled={options.useAI}
                   className="rounded"
                 />
                 <span className="text-sm text-gray-700">提取日期</span>
@@ -326,11 +387,46 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                   type="checkbox"
                   checked={options.autoTag}
                   onChange={(e) => setOptions({...options, autoTag: e.target.checked})}
+                  disabled={options.useAI}
                   className="rounded"
                 />
                 <span className="text-sm text-gray-700">自动标签</span>
               </label>
             </div>
+            
+            {/* AI API 选择 */}
+            {options.useAI && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Zap className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium text-blue-900">选择AI服务</span>
+                </div>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="ai-api"
+                      value="qwen"
+                      checked={options.preferredAPI === 'qwen'}
+                      onChange={(e) => setOptions({...options, preferredAPI: e.target.value as 'qwen' | 'deepseek'})}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">Qwen (推荐)</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="ai-api"
+                      value="deepseek"
+                      checked={options.preferredAPI === 'deepseek'}
+                      onChange={(e) => setOptions({...options, preferredAPI: e.target.value as 'qwen' | 'deepseek'})}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">DeepSeek</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Text Input */}
@@ -355,7 +451,17 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 disabled={!text.trim() || isProcessing}
                 className="btn-primary text-sm"
               >
-                {isProcessing ? '智能处理中...' : '智能处理'}
+                {isProcessing ? (
+                  <span className="flex items-center">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {options.useAI ? 'AI处理中...' : '智能处理中...'}
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    {options.useAI ? <Brain className="h-4 w-4 mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+                    {options.useAI ? 'AI智能处理' : '智能处理'}
+                  </span>
+                )}
               </button>
             </div>
           </div>
