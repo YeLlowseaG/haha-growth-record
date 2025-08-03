@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap } from 'lucide-react';
 import { Conversation } from '@/types';
 import { AIService } from '@/lib/ai-service';
+import { getTagClasses } from '@/lib/tag-colors';
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -152,15 +153,20 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     return '哈哈的对话';
   };
 
-  // 生成本地标签
+  // 生成本地标签（不包含"导入"和"哈哈"等无意义标签）
   const generateLocalTags = (text: string): string[] => {
     const tags: string[] = [];
     
+    // 家庭关系
     if (text.includes('妈妈') || text.includes('爸爸')) tags.push('家人');
+    
+    // 情感表达
     if (text.includes('？') || text.includes('什么') || text.includes('为什么')) tags.push('好奇');
     if (text.includes('！') || text.includes('哇') || text.includes('好')) tags.push('兴奋');
     if (text.includes('不') || text.includes('不要')) tags.push('拒绝');
     if (text.includes('谢谢')) tags.push('礼貌');
+    
+    // 活动场景
     if (text.includes('玩') || text.includes('游戏')) tags.push('游戏');
     if (text.includes('吃') || text.includes('饭')) tags.push('饮食');
     if (text.includes('睡') || text.includes('觉')) tags.push('睡眠');
@@ -397,7 +403,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                           <p className="text-xs text-gray-500">日期: {memory.date}</p>
                           <div className="flex flex-wrap gap-1">
                             {memory.tags.map((tag, tagIndex) => (
-                              <span key={tagIndex} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                              <span key={tagIndex} className={getTagClasses(tag)}>
                                 {tag}
                               </span>
                             ))}

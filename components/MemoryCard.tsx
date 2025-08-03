@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { MessageCircle, Camera, Video, Edit, Trash2, Tag } from 'lucide-react';
 import { MemoryType } from '@/types';
+import { getTagClasses } from '@/lib/tag-colors';
 
 interface MemoryCardProps {
   memory: MemoryType;
@@ -142,7 +143,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
             {memory.tags.map((tag, index) => (
               <span
                 key={index}
-                className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded-full"
+                className={getTagClasses(tag)}
               >
                 {tag}
               </span>
