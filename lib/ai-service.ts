@@ -30,11 +30,10 @@ export class AIService {
         },
         body: JSON.stringify({
           model: 'qwen-turbo',
-          input: {
-            messages: [
-              {
-                role: 'system',
-                content: `你是一个专门处理儿童对话记录的AI助手。请帮我分析以下文本，将其分割成有意义的对话组。
+          messages: [
+            {
+              role: 'system',
+              content: `你是一个专门处理儿童对话记录的AI助手。请帮我分析以下文本，将其分割成有意义的对话组。
 
 重要要求：
 1. 保持对话的完整性 - 如果是一段连续的对话，不要强行分割
@@ -59,17 +58,14 @@ export class AIService {
     "context": "哈哈和妈妈关于吃苹果的对话"
   }
 ]`
-              },
-              {
-                role: 'user',
-                content: text
-              }
-            ]
-          },
-          parameters: {
-            temperature: 0.3,
-            max_tokens: 2000
-          }
+            },
+            {
+              role: 'user',
+              content: text
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 2000
         })
       });
 
@@ -80,7 +76,11 @@ export class AIService {
       const data = await response.json();
       console.log('Qwen API response:', data);
       
-      const aiResponse = data.output?.text || data.output?.choices?.[0]?.message?.content;
+      // Qwen API的响应格式可能不同，尝试多种可能的字段
+      const aiResponse = data.output?.text || 
+                        data.output?.choices?.[0]?.message?.content ||
+                        data.output?.content ||
+                        data.choices?.[0]?.message?.content;
       
       if (!aiResponse) {
         console.error('No AI response from Qwen API');
