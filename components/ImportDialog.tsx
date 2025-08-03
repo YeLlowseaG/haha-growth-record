@@ -154,7 +154,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
 
   // 生成本地标签
   const generateLocalTags = (text: string): string[] => {
-    const tags = ['导入', '哈哈'];
+    const tags: string[] = [];
     
     if (text.includes('妈妈') || text.includes('爸爸')) tags.push('家人');
     if (text.includes('？') || text.includes('什么') || text.includes('为什么')) tags.push('好奇');

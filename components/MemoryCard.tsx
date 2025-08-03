@@ -78,10 +78,9 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{memory.title}</h3>
       
       <div className="mb-4">
-        {memory.type === 'conversation' && 'childName' in memory && (
+        {memory.type === 'conversation' && 'age' in memory && memory.age && (
           <div className="text-sm text-gray-600 mb-2">
-            <span className="font-medium">{memory.childName}</span>
-            {memory.age && <span className="ml-2">({memory.age})</span>}
+            <span className="text-gray-500">年龄: {memory.age}</span>
           </div>
         )}
         
