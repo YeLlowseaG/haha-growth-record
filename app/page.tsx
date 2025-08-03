@@ -6,10 +6,9 @@ import Sidebar from '@/components/Sidebar';
 import MemoryCard from '@/components/MemoryCard';
 import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
-import WordImportDialog from '@/components/WordImportDialog';
 import { MemoryType, Conversation } from '@/types';
 import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType } from '@/lib/storage';
-import { Inbox, Smile, Download, FileText } from 'lucide-react';
+import { Inbox, Smile, Download } from 'lucide-react';
 
 export default function Home() {
   const [memories, setMemories] = useState<MemoryType[]>([]);
@@ -18,7 +17,6 @@ export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
-  const [isWordImportOpen, setIsWordImportOpen] = useState(false);
   const [editingMemory, setEditingMemory] = useState<MemoryType | undefined>();
 
   // Load memories on component mount
@@ -90,13 +88,6 @@ export default function Home() {
     setMemories(updatedMemories);
   };
 
-  const handleWordImportMemories = (importedMemories: Conversation[]) => {
-    importedMemories.forEach(memory => {
-      addMemory(memory);
-    });
-    const updatedMemories = loadMemories();
-    setMemories(updatedMemories);
-  };
 
   const typeCounts = {
     conversation: memories.filter(m => m.type === 'conversation').length,
@@ -192,22 +183,13 @@ export default function Home() {
                     >
                       记录哈哈的第一个瞬间
                     </button>
-                    <div className="flex justify-center space-x-4">
-                      <button
-                        onClick={() => setIsImportOpen(true)}
-                        className="flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
-                      >
-                        <Download className="h-4 w-4" />
-                        <span>导入哈哈的对话</span>
-                      </button>
-                      <button
-                        onClick={() => setIsWordImportOpen(true)}
-                        className="flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
-                      >
-                        <FileText className="h-4 w-4" />
-                        <span>上传Word文档</span>
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => setIsImportOpen(true)}
+                      className="flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
+                    >
+                      <Download className="h-4 w-4" />
+                      <span>导入哈哈的对话</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -240,11 +222,6 @@ export default function Home() {
         onImport={handleImportMemories}
       />
 
-      <WordImportDialog
-        isOpen={isWordImportOpen}
-        onClose={() => setIsWordImportOpen(false)}
-        onImport={handleWordImportMemories}
-      />
     </div>
   );
 } 

@@ -1,10 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap, FileText } from 'lucide-react';
+import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap } from 'lucide-react';
 import { Conversation } from '@/types';
 import { AIService } from '@/lib/ai-service';
-import WordFileUpload from './WordFileUpload';
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -23,7 +22,6 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<Conversation[]>([]);
-  const [isWordUploadOpen, setIsWordUploadOpen] = useState(false);
   const [options, setOptions] = useState<ProcessingOptions>({
     useAI: true,
     preferredAPI: 'qwen',
@@ -244,13 +242,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     setText('');
     setPreview([]);
     setIsProcessing(false);
-    setIsWordUploadOpen(false);
     onClose();
-  };
-
-  const handleWordContentExtracted = (content: string) => {
-    setText(content);
-    setIsWordUploadOpen(false);
   };
 
   if (!isOpen) return null;
@@ -279,7 +271,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
               <div>
                 <h3 className="text-sm font-medium text-blue-900 mb-2">智能导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
+                  <li>• 将对话内容复制粘贴到下面的文本框</li>
                   <li>• ✅ 完全保持你复制的原始格式（包括换行、空行、缩进）</li>
                   <li>• 自动识别日期格式：2022.3.30、2022-03-30等</li>
                   <li>• 自动识别标题行（包含"对话"的短行）</li>
@@ -350,18 +342,10 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
 
           {/* Text Input */}
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="mb-2">
               <label className="block text-sm font-medium text-gray-700">
                 哈哈的对话内容
               </label>
-              <button
-                type="button"
-                onClick={() => setIsWordUploadOpen(true)}
-                className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
-              >
-                <FileText className="h-4 w-4" />
-                <span>上传Word文件</span>
-              </button>
             </div>
             <textarea
               value={text}
@@ -369,7 +353,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
               rows={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm whitespace-pre-wrap"
               style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
-              placeholder="将Word文档中的内容复制粘贴到这里，或点击上方按钮直接上传Word文件..."
+              placeholder="将对话内容复制粘贴到这里..."
             />
             <div className="mt-2 flex justify-between items-center">
               <span className="text-xs text-gray-500">
