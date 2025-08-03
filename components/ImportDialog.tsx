@@ -31,6 +31,8 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     deepseekKey: 'sk-b86a70e55ae5489497b0e6980130e481',
   });
 
+  console.log('AI服务已初始化，Qwen密钥:', 'sk-2e0ccd4afce04e608b3eda9dce40e2de'.substring(0, 10) + '...');
+
 
 
   // 本地智能处理
@@ -156,9 +158,12 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         setPreview(memories);
       } catch (aiError) {
         console.error('AI处理失败，使用本地处理:', aiError);
+        console.log('开始本地处理...');
         
         // 本地智能处理作为备用
         const localResults = processLocally(text);
+        console.log('本地处理结果:', localResults);
+        
         const memories: Conversation[] = localResults.map((result, index) => ({
           id: crypto.randomUUID(),
           type: 'conversation' as const,
