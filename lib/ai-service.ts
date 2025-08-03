@@ -76,7 +76,6 @@ export class AIService {
       });
 
       console.log('Qwen API响应状态:', response.status);
-      console.log('Qwen API响应头:', response.headers);
 
       if (!response.ok) {
         throw new Error(`Qwen API error: ${response.status}`);
@@ -85,7 +84,6 @@ export class AIService {
       const data = await response.json();
       console.log('Qwen API response:', data);
       
-      // Qwen API的响应格式可能不同，尝试多种可能的字段
       const aiResponse = data.output?.text || 
                         data.output?.choices?.[0]?.message?.content ||
                         data.output?.content ||
@@ -164,6 +162,8 @@ export class AIService {
         })
       });
 
+      console.log('DeepSeek API响应状态:', response.status);
+
       if (!response.ok) {
         throw new Error(`DeepSeek API error: ${response.status}`);
       }
@@ -195,8 +195,6 @@ export class AIService {
       throw error;
     }
   }
-
-
 
   // 智能选择API处理
   async processText(text: string, preferredAPI: 'qwen' | 'deepseek' = 'qwen'): Promise<ConversationGroup[]> {
