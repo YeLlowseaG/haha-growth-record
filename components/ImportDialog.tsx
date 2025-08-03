@@ -76,16 +76,16 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
       
       // 检查是否是对话内容
       if (trimmedLine.includes('：') || trimmedLine.includes(':')) {
-        // 添加到当前对话
+        // 添加到当前对话，保持原有格式
         if (currentConversation) {
-          currentConversation += ' ' + trimmedLine;
+          currentConversation += '\n' + trimmedLine;
         } else {
           currentConversation = trimmedLine;
         }
       } else if (trimmedLine.length > 5) {
         // 可能是描述性文本，也加入对话
         if (currentConversation) {
-          currentConversation += ' ' + trimmedLine;
+          currentConversation += '\n' + trimmedLine;
         } else {
           currentConversation = trimmedLine;
         }
@@ -103,6 +103,43 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     }
     
     return conversations;
+  };
+
+  // 生成对话标题
+  const generateConversationTitle = (text: string, context: string): string => {
+    // 如果有上下文标题，使用它
+    if (context && context !== '哈哈的对话记录') {
+      return context;
+    }
+    
+    // 根据内容智能生成标题
+    if (text.includes('朋友') && text.includes('妈妈')) {
+      return '关于朋友和家人的对话';
+    }
+    if (text.includes('选择') || text.includes('刷牙') || text.includes('洗脸')) {
+      return '日常选择的对话';
+    }
+    if (text.includes('压') || text.includes('肩膀')) {
+      return '调皮互动的对话';
+    }
+    if (text.includes('洗澡')) {
+      return '洗澡时的对话';
+    }
+    if (text.includes('吃饭') || text.includes('吃')) {
+      return '吃饭时的对话';
+    }
+    if (text.includes('睡觉') || text.includes('睡')) {
+      return '睡觉前的对话';
+    }
+    if (text.includes('玩') || text.includes('游戏')) {
+      return '玩耍时的对话';
+    }
+    if (text.includes('学习') || text.includes('读书')) {
+      return '学习时的对话';
+    }
+    
+    // 默认标题
+    return '哈哈的对话';
   };
 
   // 生成本地标签
@@ -167,7 +204,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         const memories: Conversation[] = localResults.map((result, index) => ({
           id: crypto.randomUUID(),
           type: 'conversation' as const,
-          title: `哈哈的对话 ${index + 1}`,
+          title: generateConversationTitle(result.content, result.context),
           content: result.content,
           date: result.date,
           tags: result.tags,
