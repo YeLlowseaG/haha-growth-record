@@ -8,6 +8,12 @@ interface AITitleResult {
   tags: string[];
 }
 
+interface AIFormatResult {
+  content: string;
+  title: string;
+  tags: string[];
+}
+
 export class AIService {
   private qwenKey: string;
   private deepseekKey: string;
@@ -312,6 +318,242 @@ export class AIService {
       return await this.generateTitleWithQwen(content);
     } else {
       return await this.generateTitleWithDeepSeek(content);
+    }
+  }
+
+  // 使用AI格式化对话内容，保持对话格式
+  async formatConversationWithQwen(content: string): Promise<AIFormatResult> {
+    try {
+      console.log('使用Qwen API格式化对话内容');
+      
+      const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.qwenKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'qwen-turbo',
+          input: {
+            messages: [
+              {
+                role: 'system',
+                content: `你是一个专门处理儿童对话记录的AI助手。你的任务是：
+1. 格式化对话内容，保持清晰的对话结构
+2. 生成合适的标题
+3. 生成相关标签
+
+## 内容格式化规则
+- 保持对话的分段结构
+- 每句对话占一行
+- 妈妈/我/哈哈的对话要清晰区分
+- 保留原有的对话顺序和逻辑
+- 去除多余的空行，但保持必要的段落分隔
+- 对话格式：说话者：对话内容
+
+## 标题生成规则
+- 标题应该简洁明了，8-15字
+- 突出对话的核心内容或情感
+- 体现哈哈的特点和可爱之处
+
+## 标签生成规则（选择3-5个最相关的）
+### 情感类标签
+- 好奇、兴奋、开心、生气、害怕、害羞、惊讶、困惑
+
+### 关系类标签
+- 家人、朋友、老师、同学、亲戚
+
+### 活动类标签
+- 游戏、学习、吃饭、洗澡、睡觉、玩耍、运动、画画
+
+### 性格类标签
+- 礼貌、调皮、聪明、勇敢、善良、独立、合作
+
+## 输出格式要求
+- 必须是有效的JSON对象
+- 包含：content(格式化后的内容)、title(标题)、tags(标签数组)
+
+## 示例
+
+输入："妈:你今天开心吗?哈:今天很开心,玩得很快乐。妈:今天跟谁一起玩呢? 哈:跟拉拉、雯雯一起玩。"
+
+输出：
+{
+  "content": "妈：你今天开心吗？\n哈：今天很开心，玩得很快乐。\n妈：今天跟谁一起玩呢？\n哈：跟拉拉、雯雯一起玩。",
+  "title": "哈哈分享今天的快乐",
+  "tags": ["家人", "开心", "朋友"]
+}`
+              },
+              {
+                role: 'user',
+                content: content
+              }
+            ]
+          },
+          parameters: {
+            temperature: 0.3,
+            max_tokens: 1000
+          }
+        })
+      });
+
+      console.log('Qwen API响应状态:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`Qwen API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('Qwen API response:', data);
+      
+      const aiResponse = data.output?.text || 
+                        data.output?.choices?.[0]?.message?.content ||
+                        data.output?.content ||
+                        data.choices?.[0]?.message?.content;
+      
+      if (!aiResponse) {
+        console.error('No AI response from Qwen API');
+        throw new Error('No response from Qwen API');
+      }
+
+      console.log('AI response text:', aiResponse);
+
+      // 尝试解析JSON响应
+      try {
+        const parsed = JSON.parse(aiResponse);
+        console.log('Parsed AI response:', parsed);
+        return {
+          content: parsed.content || content,
+          title: parsed.title || '哈哈的对话',
+          tags: parsed.tags || ['哈哈']
+        };
+      } catch (parseError) {
+        console.error('Failed to parse AI response as JSON:', parseError);
+        console.log('Raw AI response:', aiResponse);
+        throw new Error('AI返回的格式不正确');
+      }
+    } catch (error) {
+      console.error('Qwen API error:', error);
+      throw error;
+    }
+  }
+
+  // 使用DeepSeek格式化对话内容
+  async formatConversationWithDeepSeek(content: string): Promise<AIFormatResult> {
+    try {
+      const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.deepseekKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: 'deepseek-chat',
+          messages: [
+            {
+              role: 'system',
+              content: `你是一个专门处理儿童对话记录的AI助手。你的任务是：
+1. 格式化对话内容，保持清晰的对话结构
+2. 生成合适的标题
+3. 生成相关标签
+
+## 内容格式化规则
+- 保持对话的分段结构
+- 每句对话占一行
+- 妈妈/我/哈哈的对话要清晰区分
+- 保留原有的对话顺序和逻辑
+- 去除多余的空行，但保持必要的段落分隔
+- 对话格式：说话者：对话内容
+
+## 标题生成规则
+- 标题应该简洁明了，8-15字
+- 突出对话的核心内容或情感
+- 体现哈哈的特点和可爱之处
+
+## 标签生成规则（选择3-5个最相关的）
+### 情感类标签
+- 好奇、兴奋、开心、生气、害怕、害羞、惊讶、困惑
+
+### 关系类标签
+- 家人、朋友、老师、同学、亲戚
+
+### 活动类标签
+- 游戏、学习、吃饭、洗澡、睡觉、玩耍、运动、画画
+
+### 性格类标签
+- 礼貌、调皮、聪明、勇敢、善良、独立、合作
+
+## 输出格式要求
+- 必须是有效的JSON对象
+- 包含：content(格式化后的内容)、title(标题)、tags(标签数组)
+
+## 示例
+
+输入："妈:你今天开心吗?哈:今天很开心,玩得很快乐。妈:今天跟谁一起玩呢? 哈:跟拉拉、雯雯一起玩。"
+
+输出：
+{
+  "content": "妈：你今天开心吗？\n哈：今天很开心，玩得很快乐。\n妈：今天跟谁一起玩呢？\n哈：跟拉拉、雯雯一起玩。",
+  "title": "哈哈分享今天的快乐",
+  "tags": ["家人", "开心", "朋友"]
+}`
+            },
+            {
+              role: 'user',
+              content: content
+            }
+          ],
+          temperature: 0.3,
+          max_tokens: 1000
+        })
+      });
+
+      console.log('DeepSeek API响应状态:', response.status);
+
+      if (!response.ok) {
+        throw new Error(`DeepSeek API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      console.log('DeepSeek API response:', data);
+      
+      const aiResponse = data.choices?.[0]?.message?.content;
+      
+      if (!aiResponse) {
+        console.error('No AI response from DeepSeek API');
+        throw new Error('No response from DeepSeek API');
+      }
+
+      console.log('AI response text:', aiResponse);
+
+      // 尝试解析JSON响应
+      try {
+        const parsed = JSON.parse(aiResponse);
+        console.log('Parsed AI response:', parsed);
+        return {
+          content: parsed.content || content,
+          title: parsed.title || '哈哈的对话',
+          tags: parsed.tags || ['哈哈']
+        };
+      } catch (parseError) {
+        console.error('Failed to parse AI response as JSON:', parseError);
+        console.log('Raw AI response:', aiResponse);
+        throw new Error('AI返回的格式不正确');
+      }
+    } catch (error) {
+      console.error('DeepSeek API error:', error);
+      throw error;
+    }
+  }
+
+  // 智能格式化对话内容
+  async formatConversation(content: string, preferredAPI: 'qwen' | 'deepseek' = 'qwen'): Promise<AIFormatResult> {
+    console.log('开始格式化对话内容，选择的API:', preferredAPI);
+    
+    if (preferredAPI === 'qwen') {
+      return await this.formatConversationWithQwen(content);
+    } else {
+      return await this.formatConversationWithDeepSeek(content);
     }
   }
 

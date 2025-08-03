@@ -4,7 +4,6 @@ import { useState, useRef } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Conversation } from '@/types';
 import { parseWordContent, ParsedWordContent, cleanTextContent } from '@/lib/word-parser';
-import mammoth from 'mammoth';
 
 interface WordImportDialogProps {
   isOpen: boolean;
@@ -102,8 +101,10 @@ export default function WordImportDialog({ isOpen, onClose, onImport }: WordImpo
     try {
       // 只支持.docx格式，因为mammoth主要支持.docx
       if (file.name.toLowerCase().endsWith('.docx')) {
+        // 动态导入mammoth，避免服务端渲染问题
+        const mammoth = await import('mammoth');
         const arrayBuffer = await file.arrayBuffer();
-        const result = await mammoth.extractRawText({ arrayBuffer });
+        const result = await mammoth.default.extractRawText({ arrayBuffer });
         return result.value;
       } else {
         // 对于.doc文件，提示用户转换为.docx
@@ -111,7 +112,11 @@ export default function WordImportDialog({ isOpen, onClose, onImport }: WordImpo
       }
     } catch (error) {
       console.error('Word文件解析失败:', error);
-      throw new Error('Word文件解析失败，请确保文件格式正确');
+      if (error instanceof Error) {
+        throw new Error(`Word文件解析失败: ${error.message}`);
+      } else {
+        throw new Error('Word文件解析失败，请确保文件格式正确');
+      }
     }
   };
 

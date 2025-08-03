@@ -40,9 +40,9 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
 
 
 
-  // 本地智能处理 - 基于原始格式
+  // 本地智能处理 - 基于原始格式，保持换行
   const processLocally = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim());
+    const lines = text.split('\n'); // 不过滤空行，保持原始格式
     const conversations: Array<{content: string, date: string, tags: string[], context: string}> = [];
     let currentConversation = '';
     let currentDate = new Date().toISOString().split('T')[0];
@@ -51,7 +51,14 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const trimmedLine = line.trim();
-      if (!trimmedLine) continue;
+      
+      // 如果是空行，加入到当前对话中保持格式
+      if (!trimmedLine) {
+        if (currentConversation) {
+          currentConversation += '\n';
+        }
+        continue;
+      }
       
       // 检查是否是日期行 (支持多种格式)
       const dateMatch = trimmedLine.match(/^(\d{4})[.-](\d{1,2})[.-](\d{1,2})/);
@@ -59,7 +66,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         // 保存之前的对话
         if (currentConversation) {
           conversations.push({
-            content: currentConversation.trim(),
+            content: currentConversation, // 保持原始格式，不trim
             date: currentDate,
             tags: generateLocalTags(currentConversation),
             context: currentContext || '哈哈的对话记录'
@@ -81,18 +88,18 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
       
       // 检查是否是对话内容
       if (trimmedLine.includes('：') || trimmedLine.includes(':')) {
-        // 添加到当前对话，保持原有格式
+        // 添加到当前对话，保持原有格式（使用原始行，不是trimmed的）
         if (currentConversation) {
-          currentConversation += '\n' + trimmedLine;
+          currentConversation += '\n' + line;
         } else {
-          currentConversation = trimmedLine;
+          currentConversation = line;
         }
       } else if (trimmedLine.length > 5 && !trimmedLine.match(/^\d{4}[.-]\d{1,2}[.-]\d{1,2}/)) {
-        // 可能是描述性文本，也加入对话（排除日期行）
+        // 可能是描述性文本，也加入对话（排除日期行，使用原始行保持缩进）
         if (currentConversation) {
-          currentConversation += '\n' + trimmedLine;
+          currentConversation += '\n' + line;
         } else {
-          currentConversation = trimmedLine;
+          currentConversation = line;
         }
       }
     }
@@ -100,7 +107,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     // 添加最后一个对话
     if (currentConversation) {
       conversations.push({
-        content: currentConversation.trim(),
+        content: currentConversation, // 保持原始格式，不trim
         date: currentDate,
         tags: generateLocalTags(currentConversation),
         context: currentContext || '哈哈的对话记录'
@@ -185,7 +192,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         let title = generateConversationTitle(result.content, result.context);
         let tags = result.tags;
         
-        // 如果启用AI，使用AI生成标题和标签
+        // 如果启用AI，使用AI生成标题和标签（保持原始内容格式）
         if (options.useAI) {
           try {
             console.log('使用AI生成标题和标签...');
@@ -273,10 +280,11 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 <h3 className="text-sm font-medium text-blue-900 mb-2">智能导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
-                  <li>• 保持原始段落格式，使用本地分段</li>
+                  <li>• ✅ 完全保持你复制的原始格式（包括换行、空行、缩进）</li>
                   <li>• 自动识别日期格式：2022.3.30、2022-03-30等</li>
                   <li>• 自动识别标题行（包含"对话"的短行）</li>
                   <li>• AI智能生成标题和标签，更准确有趣</li>
+                  <li>• 输入框使用等宽字体，便于查看格式</li>
                 </ul>
               </div>
             </div>
@@ -298,7 +306,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 />
                 <span className="text-sm text-gray-700 flex items-center">
                   <Brain className="h-4 w-4 mr-1" />
-                  AI智能生成标题和标签
+                  AI智能生成标题和标签（保持原文本格式）
                 </span>
               </label>
             </div>
@@ -359,7 +367,8 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={8}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm whitespace-pre-wrap"
+              style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
               placeholder="将Word文档中的内容复制粘贴到这里，或点击上方按钮直接上传Word文件..."
             />
             <div className="mt-2 flex justify-between items-center">
@@ -399,7 +408,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <p className="text-sm font-medium text-gray-900">{memory.title}</p>
-                        <p className="text-sm text-gray-600 mt-1">{memory.content}</p>
+                        <pre className="text-sm text-gray-600 mt-1 whitespace-pre-wrap font-mono bg-white p-2 rounded border max-w-full overflow-x-auto">{memory.content}</pre>
                         <div className="flex items-center space-x-4 mt-1">
                           <p className="text-xs text-gray-500">日期: {memory.date}</p>
                           <div className="flex flex-wrap gap-1">
