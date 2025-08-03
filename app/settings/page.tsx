@@ -1,12 +1,44 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, Settings, HardDrive, Database, Shield } from 'lucide-react';
+import { ArrowLeft, Settings, HardDrive, Database, Shield, Upload, CheckCircle } from 'lucide-react';
 import StorageManager from '@/components/StorageManager';
+import ImportDialog from '@/components/ImportDialog';
 import Link from 'next/link';
+import { Conversation } from '@/types';
+import { addMemory } from '@/lib/storage';
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('storage');
+  const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
+  const [importSuccess, setImportSuccess] = useState<{ show: boolean; count: number }>({ show: false, count: 0 });
+
+  const handleImport = (memories: Conversation[]) => {
+    // 将导入的对话保存到本地存储
+    memories.forEach(memory => {
+      const now = new Date().toISOString();
+      addMemory({
+        ...memory,
+        type: 'conversation',
+        id: memory.id || `conv_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        childName: memory.childName || '哈哈',
+        age: memory.age || '3岁',
+        createdAt: memory.createdAt || now,
+        updatedAt: now
+      });
+    });
+    
+    console.log(`成功导入 ${memories.length} 条对话记录`);
+    setIsImportDialogOpen(false);
+    
+    // 显示成功提示
+    setImportSuccess({ show: true, count: memories.length });
+    
+    // 3秒后自动隐藏提示
+    setTimeout(() => {
+      setImportSuccess({ show: false, count: 0 });
+    }, 3000);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -64,6 +96,22 @@ export default function SettingsPage() {
               <div className="bg-white rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">数据管理</h3>
                 <div className="space-y-4">
+                  <div className="p-4 bg-green-50 rounded-lg">
+                    <h4 className="font-medium text-green-900 mb-2 flex items-center">
+                      <Upload className="h-4 w-4 mr-2" />
+                      导入对话
+                    </h4>
+                    <p className="text-sm text-green-800 mb-3">
+                      从文本文件导入对话记录，支持AI智能分段和标签生成。
+                    </p>
+                    <button 
+                      onClick={() => setIsImportDialogOpen(true)}
+                      className="bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                    >
+                      开始导入
+                    </button>
+                  </div>
+
                   <div className="p-4 bg-blue-50 rounded-lg">
                     <h4 className="font-medium text-blue-900 mb-2">数据备份</h4>
                     <p className="text-sm text-blue-800 mb-3">
@@ -156,6 +204,21 @@ export default function SettingsPage() {
           )}
         </div>
       </div>
+
+      {/* Import Dialog */}
+      <ImportDialog
+        isOpen={isImportDialogOpen}
+        onClose={() => setIsImportDialogOpen(false)}
+        onImport={handleImport}
+      />
+
+      {/* Success Notification */}
+      {importSuccess.show && (
+        <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 z-50">
+          <CheckCircle className="h-5 w-5" />
+          <span>成功导入 {importSuccess.count} 条对话记录！</span>
+        </div>
+      )}
     </div>
   );
 } 
