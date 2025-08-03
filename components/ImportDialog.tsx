@@ -27,11 +27,100 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
 
   // 初始化AI服务
   const aiService = new AIService({
-    qwenKey: 'sk-4b37b09662a44a90bb62a953d0f22aed',
+    qwenKey: 'sk-2e0ccd4afce04e608b3eda9dce40e2de',
     deepseekKey: 'sk-b86a70e55ae5489497b0e6980130e481',
   });
 
 
+
+  // 本地智能处理
+  const processLocally = (text: string) => {
+    const lines = text.split('\n').filter(line => line.trim());
+    const conversations: Array<{content: string, date: string, tags: string[], context: string}> = [];
+    let currentConversation = '';
+    let currentDate = new Date().toISOString().split('T')[0];
+    let currentContext = '';
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+      
+      // 检查是否是日期行
+      const dateMatch = trimmedLine.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+      if (dateMatch) {
+        // 保存之前的对话
+        if (currentConversation) {
+          conversations.push({
+            content: currentConversation.trim(),
+            date: currentDate,
+            tags: generateLocalTags(currentConversation),
+            context: currentContext || '哈哈的对话记录'
+          });
+        }
+        
+        // 开始新对话
+        currentDate = `${dateMatch[1]}-${dateMatch[2].padStart(2, '0')}-${dateMatch[3].padStart(2, '0')}`;
+        currentConversation = '';
+        currentContext = '';
+        continue;
+      }
+      
+      // 检查是否是标题行（如"洗澡时的对话"）
+      if (trimmedLine.includes('对话') && !trimmedLine.includes('：') && !trimmedLine.includes(':')) {
+        currentContext = trimmedLine;
+        continue;
+      }
+      
+      // 检查是否是对话内容
+      if (trimmedLine.includes('：') || trimmedLine.includes(':')) {
+        // 添加到当前对话
+        if (currentConversation) {
+          currentConversation += ' ' + trimmedLine;
+        } else {
+          currentConversation = trimmedLine;
+        }
+      } else if (trimmedLine.length > 5) {
+        // 可能是描述性文本，也加入对话
+        if (currentConversation) {
+          currentConversation += ' ' + trimmedLine;
+        } else {
+          currentConversation = trimmedLine;
+        }
+      }
+    }
+    
+    // 添加最后一个对话
+    if (currentConversation) {
+      conversations.push({
+        content: currentConversation.trim(),
+        date: currentDate,
+        tags: generateLocalTags(currentConversation),
+        context: currentContext || '哈哈的对话记录'
+      });
+    }
+    
+    return conversations;
+  };
+
+  // 生成本地标签
+  const generateLocalTags = (text: string): string[] => {
+    const tags = ['导入', '哈哈'];
+    
+    if (text.includes('妈妈') || text.includes('爸爸')) tags.push('家人');
+    if (text.includes('？') || text.includes('什么') || text.includes('为什么')) tags.push('好奇');
+    if (text.includes('！') || text.includes('哇') || text.includes('好')) tags.push('兴奋');
+    if (text.includes('不') || text.includes('不要')) tags.push('拒绝');
+    if (text.includes('谢谢')) tags.push('礼貌');
+    if (text.includes('玩') || text.includes('游戏')) tags.push('游戏');
+    if (text.includes('吃') || text.includes('饭')) tags.push('饮食');
+    if (text.includes('睡') || text.includes('觉')) tags.push('睡眠');
+    if (text.includes('朋友')) tags.push('社交');
+    if (text.includes('选择')) tags.push('决策');
+    if (text.includes('压') || text.includes('肩膀')) tags.push('互动');
+    
+    return tags;
+  };
 
   const processText = async () => {
     if (!text.trim()) return;
@@ -40,32 +129,56 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     
     try {
       console.log('开始AI处理，使用API:', options.preferredAPI);
-      const aiResults = await aiService.processText(text, options.preferredAPI);
-      console.log('AI处理结果:', aiResults);
       
-      if (!aiResults || aiResults.length === 0) {
-        throw new Error('AI返回空结果');
+      try {
+        const aiResults = await aiService.processText(text, options.preferredAPI);
+        console.log('AI处理结果:', aiResults);
+        
+        if (!aiResults || aiResults.length === 0) {
+          throw new Error('AI返回空结果');
+        }
+        
+        const memories: Conversation[] = aiResults.map((result, index) => ({
+          id: crypto.randomUUID(),
+          type: 'conversation' as const,
+          title: `哈哈的对话 ${index + 1}`,
+          content: result.content,
+          date: result.date || new Date().toISOString().split('T')[0],
+          tags: result.tags,
+          childName: '哈哈',
+          age: '',
+          context: result.context || '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }));
+        
+        console.log('AI处理成功，生成', memories.length, '条记录');
+        setPreview(memories);
+      } catch (aiError) {
+        console.error('AI处理失败，使用本地处理:', aiError);
+        
+        // 本地智能处理作为备用
+        const localResults = processLocally(text);
+        const memories: Conversation[] = localResults.map((result, index) => ({
+          id: crypto.randomUUID(),
+          type: 'conversation' as const,
+          title: `哈哈的对话 ${index + 1}`,
+          content: result.content,
+          date: result.date,
+          tags: result.tags,
+          childName: '哈哈',
+          age: '',
+          context: result.context,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        }));
+        
+        console.log('本地处理成功，生成', memories.length, '条记录');
+        setPreview(memories);
       }
-      
-      const memories: Conversation[] = aiResults.map((result, index) => ({
-        id: crypto.randomUUID(),
-        type: 'conversation' as const,
-        title: `哈哈的对话 ${index + 1}`,
-        content: result.content,
-        date: result.date || new Date().toISOString().split('T')[0],
-        tags: result.tags,
-        childName: '哈哈',
-        age: '',
-        context: result.context || '',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
-      
-      console.log('AI处理成功，生成', memories.length, '条记录');
-      setPreview(memories);
     } catch (error) {
-      console.error('AI处理失败:', error);
-      alert('AI处理失败，请检查网络连接或API密钥');
+      console.error('所有处理方式都失败:', error);
+      alert('处理失败，请检查网络连接');
     } finally {
       setIsProcessing(false);
     }
@@ -114,10 +227,9 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 <h3 className="text-sm font-medium text-blue-900 mb-2">智能导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
-                  <li>• 可选择使用AI智能处理或传统方法处理</li>
-                  <li>• AI会智能识别句子、日期、上下文和情感</li>
+                  <li>• 智能识别日期、对话内容和上下文</li>
                   <li>• 自动合并相关的对话，保持对话的完整性</li>
-                  <li>• 支持多种日期格式：2024年1月1日、1月1日、2024-01-01等</li>
+                  <li>• 支持多种日期格式：2022.3.30、2022-03-30等</li>
                   <li>• 自动生成相关标签，如"好奇"、"兴奋"、"家人"等</li>
                 </ul>
               </div>
