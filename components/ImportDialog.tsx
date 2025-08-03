@@ -1,13 +1,19 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, MessageCircle, AlertCircle, Settings, Zap } from 'lucide-react';
+import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap } from 'lucide-react';
 import { Conversation } from '@/types';
+import { AIService } from '@/lib/ai-service';
 
 interface ImportDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onImport: (memories: Conversation[]) => void;
+}
+
+interface ProcessingOptions {
+  useAI: boolean;
+  preferredAPI: 'qwen' | 'deepseek';
 }
 
 
@@ -16,6 +22,16 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<Conversation[]>([]);
+  const [options, setOptions] = useState<ProcessingOptions>({
+    useAI: true,
+    preferredAPI: 'qwen',
+  });
+
+  // 初始化AI服务
+  const aiService = new AIService({
+    qwenKey: 'sk-2e0ccd4afce04e608b3eda9dce40e2de',
+    deepseekKey: 'sk-0f273a605d75468eb410d88d1ad8877b',
+  });
 
 
 
@@ -154,27 +170,49 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     setIsProcessing(true);
     
     try {
-      console.log('开始本地处理...');
+      console.log('开始处理...');
       
-      // 直接使用本地处理
+      // 使用本地处理进行分段
       const localResults = processLocally(text);
-      console.log('本地处理结果:', localResults);
+      console.log('本地分段结果:', localResults);
       
-      const memories: Conversation[] = localResults.map((result, index) => ({
-        id: crypto.randomUUID(),
-        type: 'conversation' as const,
-        title: generateConversationTitle(result.content, result.context),
-        content: result.content,
-        date: result.date,
-        tags: result.tags,
-        childName: '哈哈',
-        age: '',
-        context: result.context,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      }));
+      // 为每个分段生成标题和标签
+      const memories: Conversation[] = [];
       
-      console.log('本地处理成功，生成', memories.length, '条记录');
+      for (const result of localResults) {
+        let title = generateConversationTitle(result.content, result.context);
+        let tags = result.tags;
+        
+        // 如果启用AI，使用AI生成标题和标签
+        if (options.useAI) {
+          try {
+            console.log('使用AI生成标题和标签...');
+            const aiResult = await aiService.generateTitle(result.content, options.preferredAPI);
+            title = aiResult.title;
+            tags = aiResult.tags;
+            console.log('AI生成结果:', aiResult);
+          } catch (aiError) {
+            console.error('AI生成失败，使用本地生成:', aiError);
+            // 如果AI失败，继续使用本地生成的标题和标签
+          }
+        }
+        
+        memories.push({
+          id: crypto.randomUUID(),
+          type: 'conversation' as const,
+          title,
+          content: result.content,
+          date: result.date,
+          tags,
+          childName: '哈哈',
+          age: '',
+          context: result.context,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        });
+      }
+      
+      console.log('处理成功，生成', memories.length, '条记录');
       setPreview(memories);
     } catch (error) {
       console.error('处理失败:', error);
@@ -208,7 +246,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <MessageCircle className="h-6 w-6 text-blue-500" />
-            <h2 className="text-xl font-semibold text-gray-900">直接导入哈哈的对话</h2>
+            <h2 className="text-xl font-semibold text-gray-900">智能导入哈哈的对话</h2>
           </div>
           <button
             onClick={handleClose}
@@ -224,16 +262,72 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
               <div>
-                <h3 className="text-sm font-medium text-blue-900 mb-2">直接导入说明</h3>
+                <h3 className="text-sm font-medium text-blue-900 mb-2">智能导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
-                  <li>• 保持原始段落格式，不进行AI处理</li>
+                  <li>• 保持原始段落格式，使用本地分段</li>
                   <li>• 自动识别日期格式：2022.3.30、2022-03-30等</li>
                   <li>• 自动识别标题行（包含"对话"的短行）</li>
-                  <li>• 智能生成相关标签，如"好奇"、"兴奋"、"家人"等</li>
+                  <li>• AI智能生成标题和标签，更准确有趣</li>
                 </ul>
               </div>
             </div>
+          </div>
+
+          {/* Processing Options */}
+          <div className="bg-gray-50 rounded-lg p-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <Settings className="h-4 w-4 text-gray-600" />
+              <h3 className="text-sm font-medium text-gray-900">处理选项</h3>
+            </div>
+            <div className="grid grid-cols-1 gap-4">
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={options.useAI}
+                  onChange={(e) => setOptions({...options, useAI: e.target.checked})}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-700 flex items-center">
+                  <Brain className="h-4 w-4 mr-1" />
+                  AI智能生成标题和标签
+                </span>
+              </label>
+            </div>
+            
+            {/* AI API 选择 */}
+            {options.useAI && (
+              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Zap className="h-4 w-4 text-blue-500" />
+                  <span className="text-sm font-medium text-blue-900">选择AI服务</span>
+                </div>
+                <div className="flex space-x-4">
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="ai-api"
+                      value="qwen"
+                      checked={options.preferredAPI === 'qwen'}
+                      onChange={(e) => setOptions({...options, preferredAPI: e.target.value as 'qwen' | 'deepseek'})}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">Qwen (推荐)</span>
+                  </label>
+                  <label className="flex items-center space-x-2">
+                    <input
+                      type="radio"
+                      name="ai-api"
+                      value="deepseek"
+                      checked={options.preferredAPI === 'deepseek'}
+                      onChange={(e) => setOptions({...options, preferredAPI: e.target.value as 'qwen' | 'deepseek'})}
+                      className="rounded"
+                    />
+                    <span className="text-sm text-gray-700">DeepSeek</span>
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
 
@@ -263,12 +357,12 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 {isProcessing ? (
                   <span className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    处理中...
+                    {options.useAI ? 'AI处理中...' : '处理中...'}
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    <Zap className="h-4 w-4 mr-1" />
-                    直接处理
+                    {options.useAI ? <Brain className="h-4 w-4 mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
+                    {options.useAI ? 'AI智能处理' : '直接处理'}
                   </span>
                 )}
               </button>
