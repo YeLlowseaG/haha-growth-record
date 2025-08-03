@@ -88,7 +88,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
         <div className="text-gray-700 leading-relaxed">
           {showFullContent ? (
             <div>
-              {memory.content}
+              <pre className="whitespace-pre-wrap font-sans">{memory.content}</pre>
               <button
                 onClick={() => setShowFullContent(false)}
                 className="text-primary-500 hover:text-primary-600 text-sm ml-2"
@@ -100,7 +100,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
             <div>
               {memory.content.length > 100 ? (
                 <>
-                  {memory.content.substring(0, 100)}...
+                  <pre className="whitespace-pre-wrap font-sans inline">{memory.content.substring(0, 100)}</pre>...
                   <button
                     onClick={() => setShowFullContent(true)}
                     className="text-primary-500 hover:text-primary-600 text-sm ml-2"
@@ -109,7 +109,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
                   </button>
                 </>
               ) : (
-                memory.content
+                <pre className="whitespace-pre-wrap font-sans">{memory.content}</pre>
               )}
             </div>
           )}

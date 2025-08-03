@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, MessageCircle, Camera, Video, Tag } from 'lucide-react';
 import FileUpload from './FileUpload';
 import { MemoryType, Conversation, Photo, Video as VideoType } from '@/types';
@@ -17,7 +17,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
   const [title, setTitle] = useState(editingMemory?.title || '');
   const [content, setContent] = useState(editingMemory?.content || '');
   const [date, setDate] = useState(editingMemory?.date || new Date().toISOString().split('T')[0]);
-  const [tags, setTags] = useState(editingMemory?.tags.join(', ') || '');
+  const [tags, setTags] = useState(editingMemory?.tags?.join(', ') || '');
   
   // Conversation specific fields - 默认填入哈哈的信息
   const [childName, setChildName] = useState(
@@ -35,8 +35,47 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
     editingMemory?.type === 'photo' ? (editingMemory as Photo).imageUrl :
     editingMemory?.type === 'video' ? (editingMemory as VideoType).videoUrl : ''
   );
-  
 
+  // 更新状态当editingMemory变化时
+  useEffect(() => {
+    if (editingMemory) {
+      setType(editingMemory.type);
+      setTitle(editingMemory.title);
+      setContent(editingMemory.content);
+      setDate(editingMemory.date);
+      setTags(editingMemory.tags?.join(', ') || '');
+      
+      if (editingMemory.type === 'conversation') {
+        const conversation = editingMemory as Conversation;
+        setChildName(conversation.childName);
+        setAge(conversation.age);
+        setContext(conversation.context || '');
+      } else {
+        setChildName('哈哈');
+        setAge('');
+        setContext('');
+      }
+      
+      if (editingMemory.type === 'photo') {
+        setMediaUrl((editingMemory as Photo).imageUrl);
+      } else if (editingMemory.type === 'video') {
+        setMediaUrl((editingMemory as VideoType).videoUrl);
+      } else {
+        setMediaUrl('');
+      }
+    } else {
+      // 重置为默认值
+      setType('conversation');
+      setTitle('');
+      setContent('');
+      setDate(new Date().toISOString().split('T')[0]);
+      setTags('');
+      setChildName('哈哈');
+      setAge('');
+      setContext('');
+      setMediaUrl('');
+    }
+  }, [editingMemory]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,7 +218,8 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
               value={content}
               onChange={(e) => setContent(e.target.value)}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent font-mono text-sm whitespace-pre-wrap"
+              style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace' }}
               placeholder="详细描述哈哈这个可爱的瞬间..."
               required
             />
