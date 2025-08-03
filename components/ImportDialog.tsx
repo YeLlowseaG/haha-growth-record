@@ -35,6 +35,61 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     return sentences;
   };
 
+  // 合并相关对话
+  const mergeRelatedConversations = (sentences: string[]): string[] => {
+    const merged: string[] = [];
+    let currentGroup: string[] = [];
+    
+    for (let i = 0; i < sentences.length; i++) {
+      const sentence = sentences[i];
+      const nextSentence = sentences[i + 1];
+      
+      // 添加到当前组
+      currentGroup.push(sentence);
+      
+      // 判断是否应该结束当前组
+      const shouldEndGroup = () => {
+        // 如果这是最后一个句子，结束组
+        if (i === sentences.length - 1) return true;
+        
+        // 如果下一句是新的主题（包含特定关键词），结束组
+        const nextKeywords = ['然后', '接着', '后来', '过了一会儿', '第二天', '今天', '明天'];
+        if (nextSentence && nextKeywords.some(keyword => nextSentence.includes(keyword))) {
+          return true;
+        }
+        
+        // 如果当前组已经有3个以上的句子，结束组
+        if (currentGroup.length >= 3) return true;
+        
+        // 如果下一句很短（少于5个字符），可能是语气词，继续组
+        if (nextSentence && nextSentence.length < 5) return false;
+        
+        // 如果当前句和下一句之间有明显的主题转换，结束组
+        const currentTopics = ['妈妈', '爸爸', '奶奶', '爷爷', '老师', '小朋友'];
+        const nextTopics = ['妈妈', '爸爸', '奶奶', '爷爷', '老师', '小朋友'];
+        
+        const currentHasTopic = currentTopics.some(topic => sentence.includes(topic));
+        const nextHasTopic = nextTopics.some(topic => nextSentence.includes(topic));
+        
+        if (currentHasTopic && nextHasTopic && !sentence.includes(nextSentence.split('')[0])) {
+          return true;
+        }
+        
+        return false;
+      };
+      
+      if (shouldEndGroup()) {
+        // 合并当前组
+        if (currentGroup.length > 0) {
+          merged.push(currentGroup.join(' '));
+          currentGroup = [];
+        }
+      }
+    }
+    
+    return merged;
+  };
+
   // 合并短行
   const mergeShortLines = (lines: string[]): string[] => {
     const merged: string[] = [];
@@ -130,14 +185,15 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
       if (options.splitBySentences) {
         // 按句子分割
         const sentences = splitIntoSentences(text);
-        processedLines = sentences;
+        // 合并相关对话
+        processedLines = mergeRelatedConversations(sentences);
       } else {
         // 按行分割
         processedLines = text.split('\n').filter(line => line.trim());
       }
 
-      if (options.mergeShortLines) {
-        // 合并短行
+      if (options.mergeShortLines && !options.splitBySentences) {
+        // 合并短行（仅在按行分割时使用）
         processedLines = mergeShortLines(processedLines);
       }
 
@@ -223,6 +279,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
                   <li>• 系统会智能识别句子、日期和上下文</li>
+                  <li>• 自动合并相关的对话，保持对话的完整性</li>
                   <li>• 支持多种日期格式：2024年1月1日、1月1日、2024-01-01等</li>
                   <li>• 自动生成相关标签，如"好奇"、"兴奋"、"家人"等</li>
                 </ul>
@@ -244,7 +301,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                   onChange={(e) => setOptions({...options, splitBySentences: e.target.checked})}
                   className="rounded"
                 />
-                <span className="text-sm text-gray-700">按句子分割</span>
+                <span className="text-sm text-gray-700">智能分割并合并相关对话</span>
               </label>
               <label className="flex items-center space-x-2">
                 <input
