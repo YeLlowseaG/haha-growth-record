@@ -1,9 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap } from 'lucide-react';
+import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap, FileText } from 'lucide-react';
 import { Conversation } from '@/types';
 import { AIService } from '@/lib/ai-service';
+import WordFileUpload from './WordFileUpload';
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<Conversation[]>([]);
+  const [isWordUploadOpen, setIsWordUploadOpen] = useState(false);
   const [options, setOptions] = useState<ProcessingOptions>({
     useAI: true,
     preferredAPI: 'qwen',
@@ -235,7 +237,13 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     setText('');
     setPreview([]);
     setIsProcessing(false);
+    setIsWordUploadOpen(false);
     onClose();
+  };
+
+  const handleWordContentExtracted = (content: string) => {
+    setText(content);
+    setIsWordUploadOpen(false);
   };
 
   if (!isOpen) return null;
@@ -334,15 +342,25 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
 
           {/* Text Input */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              粘贴哈哈的对话内容
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-gray-700">
+                哈哈的对话内容
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsWordUploadOpen(true)}
+                className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
+              >
+                <FileText className="h-4 w-4" />
+                <span>上传Word文件</span>
+              </button>
+            </div>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
               rows={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="将Word文档中的内容复制粘贴到这里，保持原始格式..."
+              placeholder="将Word文档中的内容复制粘贴到这里，或点击上方按钮直接上传Word文件..."
             />
             <div className="mt-2 flex justify-between items-center">
               <span className="text-xs text-gray-500">
