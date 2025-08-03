@@ -1,9 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { X, Upload, MessageCircle, AlertCircle, Settings, Brain, Zap } from 'lucide-react';
+import { X, Upload, MessageCircle, AlertCircle, Settings, Zap } from 'lucide-react';
 import { Conversation } from '@/types';
-import { AIService } from '@/lib/ai-service';
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -11,27 +10,15 @@ interface ImportDialogProps {
   onImport: (memories: Conversation[]) => void;
 }
 
-interface ProcessingOptions {
-  useAI: boolean;
-  preferredAPI: 'qwen' | 'deepseek';
-}
+
 
 export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialogProps) {
   const [text, setText] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<Conversation[]>([]);
-  const [options, setOptions] = useState<ProcessingOptions>({
-    useAI: false,
-    preferredAPI: 'qwen',
-  });
 
-  // 初始化AI服务
-  const aiService = new AIService({
-    qwenKey: 'sk-2e0ccd4afce04e608b3eda9dce40e2de',
-    deepseekKey: 'sk-0f273a605d75468eb410d88d1ad8877b',
-  });
 
-  console.log('AI服务已初始化，Qwen密钥:', 'sk-2e0ccd4afce04e608b3eda9dce40e2de'.substring(0, 10) + '...');
+
 
 
 
@@ -167,61 +154,31 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     setIsProcessing(true);
     
     try {
-      console.log('开始AI处理，使用API:', options.preferredAPI);
+      console.log('开始本地处理...');
       
-      try {
-        const aiResults = await aiService.processText(text, options.preferredAPI);
-        console.log('AI处理结果:', aiResults);
-        
-        if (!aiResults || aiResults.length === 0) {
-          throw new Error('AI返回空结果');
-        }
-        
-        const memories: Conversation[] = aiResults.map((result, index) => ({
-          id: crypto.randomUUID(),
-          type: 'conversation' as const,
-          title: `哈哈的对话 ${index + 1}`,
-          content: result.content,
-          date: result.date || new Date().toISOString().split('T')[0],
-          tags: result.tags,
-          childName: '哈哈',
-          age: '',
-          context: result.context || '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }));
-        
-        console.log('AI处理成功，生成', memories.length, '条记录');
-        setPreview(memories);
-      } catch (aiError) {
-        console.error('AI处理失败，使用本地处理:', aiError);
-        console.log('开始本地处理...');
-        
-        // 本地智能处理作为备用
-        const localResults = processLocally(text);
-        console.log('本地处理结果:', localResults);
-        console.log('第一个对话内容:', localResults[0]?.content);
-        
-        const memories: Conversation[] = localResults.map((result, index) => ({
-          id: crypto.randomUUID(),
-          type: 'conversation' as const,
-          title: generateConversationTitle(result.content, result.context),
-          content: result.content,
-          date: result.date,
-          tags: result.tags,
-          childName: '哈哈',
-          age: '',
-          context: result.context,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }));
-        
-        console.log('本地处理成功，生成', memories.length, '条记录');
-        setPreview(memories);
-      }
+      // 直接使用本地处理
+      const localResults = processLocally(text);
+      console.log('本地处理结果:', localResults);
+      
+      const memories: Conversation[] = localResults.map((result, index) => ({
+        id: crypto.randomUUID(),
+        type: 'conversation' as const,
+        title: generateConversationTitle(result.content, result.context),
+        content: result.content,
+        date: result.date,
+        tags: result.tags,
+        childName: '哈哈',
+        age: '',
+        context: result.context,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      
+      console.log('本地处理成功，生成', memories.length, '条记录');
+      setPreview(memories);
     } catch (error) {
-      console.error('所有处理方式都失败:', error);
-      alert('处理失败，请检查网络连接');
+      console.error('处理失败:', error);
+      alert('处理失败，请检查文本格式');
     } finally {
       setIsProcessing(false);
     }
@@ -279,61 +236,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
             </div>
           </div>
 
-          {/* Processing Options */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <div className="flex items-center space-x-2 mb-3">
-              <Settings className="h-4 w-4 text-gray-600" />
-              <h3 className="text-sm font-medium text-gray-900">处理选项</h3>
-            </div>
-            <div className="grid grid-cols-1 gap-4">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={options.useAI}
-                  onChange={(e) => setOptions({...options, useAI: e.target.checked})}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700 flex items-center">
-                  <Brain className="h-4 w-4 mr-1" />
-                  AI智能处理
-                </span>
-              </label>
-            </div>
-            
-            {/* AI API 选择 */}
-            {options.useAI && (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Zap className="h-4 w-4 text-blue-500" />
-                  <span className="text-sm font-medium text-blue-900">选择AI服务</span>
-                </div>
-                <div className="flex space-x-4">
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="ai-api"
-                      value="qwen"
-                      checked={options.preferredAPI === 'qwen'}
-                      onChange={(e) => setOptions({...options, preferredAPI: e.target.value as 'qwen' | 'deepseek'})}
-                      className="rounded"
-                    />
-                    <span className="text-sm text-gray-700">Qwen (推荐)</span>
-                  </label>
-                  <label className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="ai-api"
-                      value="deepseek"
-                      checked={options.preferredAPI === 'deepseek'}
-                      onChange={(e) => setOptions({...options, preferredAPI: e.target.value as 'qwen' | 'deepseek'})}
-                      className="rounded"
-                    />
-                    <span className="text-sm text-gray-700">DeepSeek</span>
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
+
 
           {/* Text Input */}
           <div>
@@ -360,12 +263,12 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 {isProcessing ? (
                   <span className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {options.useAI ? 'AI处理中...' : '处理中...'}
+                    处理中...
                   </span>
                 ) : (
                   <span className="flex items-center">
-                    {options.useAI ? <Brain className="h-4 w-4 mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
-                    {options.useAI ? 'AI智能处理' : '直接处理'}
+                    <Zap className="h-4 w-4 mr-1" />
+                    直接处理
                   </span>
                 )}
               </button>

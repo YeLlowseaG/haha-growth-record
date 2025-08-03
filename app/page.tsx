@@ -8,7 +8,7 @@ import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
 import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType } from '@/lib/storage';
-import { Inbox, Smile, Download, Brain } from 'lucide-react';
+import { Inbox, Smile, Download } from 'lucide-react';
 
 export default function Home() {
   const [memories, setMemories] = useState<MemoryType[]>([]);
@@ -182,7 +182,7 @@ export default function Home() {
                     >
                       记录哈哈的第一个瞬间
                     </button>
-                    <div className="flex justify-center space-x-4">
+                    <div className="flex justify-center">
                       <button
                         onClick={() => setIsImportOpen(true)}
                         className="flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
@@ -190,13 +190,6 @@ export default function Home() {
                         <Download className="h-4 w-4" />
                         <span>导入哈哈的对话</span>
                       </button>
-                      <a
-                        href="/test-ai"
-                        className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-700"
-                      >
-                        <Brain className="h-4 w-4" />
-                        <span>AI测试工具</span>
-                      </a>
                     </div>
                   </div>
                 )}
