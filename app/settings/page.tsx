@@ -1,0 +1,161 @@
+'use client';
+
+import { useState } from 'react';
+import { ArrowLeft, Settings, HardDrive, Database, Shield } from 'lucide-react';
+import StorageManager from '@/components/StorageManager';
+import Link from 'next/link';
+
+export default function SettingsPage() {
+  const [activeTab, setActiveTab] = useState('storage');
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center h-16">
+            <Link href="/" className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors">
+              <ArrowLeft className="h-5 w-5" />
+              <span>返回首页</span>
+            </Link>
+            <div className="flex items-center space-x-3 ml-6">
+              <Settings className="h-6 w-6 text-primary-500" />
+              <h1 className="text-xl font-semibold text-gray-900">设置</h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <nav className="flex space-x-8">
+            {[
+              { id: 'storage', label: '存储管理', icon: HardDrive },
+              { id: 'data', label: '数据管理', icon: Database },
+              { id: 'privacy', label: '隐私设置', icon: Shield },
+            ].map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === id
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{label}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {/* Tab Content */}
+        <div className="space-y-6">
+          {activeTab === 'storage' && (
+            <div>
+              <StorageManager />
+            </div>
+          )}
+
+          {activeTab === 'data' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">数据管理</h3>
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg">
+                    <h4 className="font-medium text-blue-900 mb-2">数据备份</h4>
+                    <p className="text-sm text-blue-800 mb-3">
+                      定期备份你的数据，防止意外丢失。建议每月备份一次。
+                    </p>
+                    <button className="btn-primary text-sm">
+                      立即备份
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-yellow-50 rounded-lg">
+                    <h4 className="font-medium text-yellow-900 mb-2">数据恢复</h4>
+                    <p className="text-sm text-yellow-800 mb-3">
+                      从之前的备份文件恢复数据。
+                    </p>
+                    <button className="btn-secondary text-sm">
+                      恢复数据
+                    </button>
+                  </div>
+
+                  <div className="p-4 bg-red-50 rounded-lg">
+                    <h4 className="font-medium text-red-900 mb-2">清除所有数据</h4>
+                    <p className="text-sm text-red-800 mb-3">
+                      此操作将永久删除所有记录，请谨慎操作。
+                    </p>
+                    <button className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
+                      清除所有数据
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'privacy' && (
+            <div className="space-y-6">
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">隐私设置</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900">本地存储</h4>
+                      <p className="text-sm text-gray-600">所有数据仅保存在你的设备上</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600 font-medium">已启用</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900">数据加密</h4>
+                      <p className="text-sm text-gray-600">本地数据使用浏览器加密存储</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600 font-medium">已启用</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                    <div>
+                      <h4 className="font-medium text-gray-900">自动清理</h4>
+                      <p className="text-sm text-gray-600">定期清理过期的临时数据</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-green-600 font-medium">已启用</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-lg shadow-sm p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">隐私说明</h3>
+                <div className="space-y-3 text-sm text-gray-600">
+                  <p>
+                    • 所有数据仅保存在你的浏览器本地存储中，不会上传到任何服务器
+                  </p>
+                  <p>
+                    • 你可以随时导出数据到本地文件进行备份
+                  </p>
+                  <p>
+                    • 清除浏览器数据会导致所有记录丢失，请提前备份
+                  </p>
+                  <p>
+                    • 建议定期导出重要数据到本地文件
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+} 
