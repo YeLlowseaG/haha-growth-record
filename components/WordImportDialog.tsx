@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { X, Upload, FileText, AlertCircle, CheckCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Conversation } from '@/types';
 import { parseWordContent, ParsedWordContent, cleanTextContent } from '@/lib/word-parser';
+import mammoth from 'mammoth';
 
 interface WordImportDialogProps {
   isOpen: boolean;
@@ -96,23 +97,22 @@ export default function WordImportDialog({ isOpen, onClose, onImport }: WordImpo
     }
   };
 
-  // 改进的Word文件读取功能
-  const readWordFile = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          resolve(content);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      reader.onerror = () => reject(new Error('读取文件失败'));
-      reader.readAsText(file, 'utf-8');
-    });
+  // 使用mammoth库读取Word文件
+  const readWordFile = async (file: File): Promise<string> => {
+    try {
+      // 只支持.docx格式，因为mammoth主要支持.docx
+      if (file.name.toLowerCase().endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return result.value;
+      } else {
+        // 对于.doc文件，提示用户转换为.docx
+        throw new Error('目前只支持.docx格式，请将.doc文件转换为.docx格式后重试');
+      }
+    } catch (error) {
+      console.error('Word文件解析失败:', error);
+      throw new Error('Word文件解析失败，请确保文件格式正确');
+    }
   };
 
   const handleImport = () => {
@@ -162,7 +162,8 @@ export default function WordImportDialog({ isOpen, onClose, onImport }: WordImpo
               <div>
                 <h3 className="text-sm font-medium text-blue-900 mb-2">Word文档导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• 支持 .docx 和 .doc 格式</li>
+                  <li>• 目前支持 .docx 格式（推荐）</li>
+                  <li>• .doc 格式请先转换为 .docx</li>
                   <li>• 文件大小不超过10MB</li>
                   <li>• 自动识别对话内容和日期</li>
                   <li>• 智能生成标签</li>
@@ -197,7 +198,7 @@ export default function WordImportDialog({ isOpen, onClose, onImport }: WordImpo
                 选择Word文档
               </h3>
               <p className="text-gray-600 mb-4">
-                支持 .docx 和 .doc 格式
+                推荐使用 .docx 格式
               </p>
               <button
                 onClick={handleFileSelect}

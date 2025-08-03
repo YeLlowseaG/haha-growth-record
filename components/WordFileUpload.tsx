@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle, X, Loader2 } from 'lucide-react';
+import mammoth from 'mammoth';
 
 interface WordFileUploadProps {
   onContentExtracted: (content: string) => void;
@@ -71,32 +72,22 @@ export default function WordFileUpload({ onContentExtracted, onClose }: WordFile
     }
   };
 
-  // 改进的Word文件读取功能
-  const readWordFile = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      
-      reader.onload = (e) => {
-        try {
-          const content = e.target?.result as string;
-          
-          // 如果是.docx文件，尝试解析XML内容
-          if (file.name.toLowerCase().endsWith('.docx')) {
-            // 对于.docx文件，我们使用文本读取方式
-            // 实际项目中可能需要使用专门的库如mammoth.js
-            resolve(cleanTextContent(content));
-          } else {
-            // 对于.doc文件，直接使用文本内容
-            resolve(cleanTextContent(content));
-          }
-        } catch (error) {
-          reject(error);
-        }
-      };
-      
-      reader.onerror = () => reject(new Error('读取文件失败'));
-      reader.readAsText(file, 'utf-8');
-    });
+  // 使用mammoth库读取Word文件
+  const readWordFile = async (file: File): Promise<string> => {
+    try {
+      // 只支持.docx格式，因为mammoth主要支持.docx
+      if (file.name.toLowerCase().endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        return cleanTextContent(result.value);
+      } else {
+        // 对于.doc文件，提示用户转换为.docx
+        throw new Error('目前只支持.docx格式，请将.doc文件转换为.docx格式后重试');
+      }
+    } catch (error) {
+      console.error('Word文件解析失败:', error);
+      throw new Error('Word文件解析失败，请确保文件格式正确');
+    }
   };
 
   // 清理文本内容
@@ -105,6 +96,7 @@ export default function WordFileUpload({ onContentExtracted, onClose }: WordFile
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
       .replace(/\n{3,}/g, '\n\n')
+      .replace(/[^\S\n]+/g, ' ') // 合并多个空格
       .trim();
   };
 
@@ -143,7 +135,8 @@ export default function WordFileUpload({ onContentExtracted, onClose }: WordFile
               <div>
                 <h3 className="text-sm font-medium text-blue-900 mb-2">Word文档上传说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• 支持 .docx 和 .doc 格式</li>
+                  <li>• 目前支持 .docx 格式（推荐）</li>
+                  <li>• .doc 格式请先转换为 .docx</li>
                   <li>• 文件大小不超过10MB</li>
                   <li>• 自动提取文本内容</li>
                   <li>• 保持原始格式</li>
@@ -179,7 +172,7 @@ export default function WordFileUpload({ onContentExtracted, onClose }: WordFile
                   选择Word文档
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  支持 .docx 和 .doc 格式
+                  推荐使用 .docx 格式
                 </p>
                 <button
                   onClick={handleFileSelect}
