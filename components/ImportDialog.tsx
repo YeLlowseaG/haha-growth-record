@@ -12,10 +12,6 @@ interface ImportDialogProps {
 }
 
 interface ProcessingOptions {
-  splitBySentences: boolean;
-  mergeShortLines: boolean;
-  extractDates: boolean;
-  autoTag: boolean;
   useAI: boolean;
   preferredAPI: 'qwen' | 'deepseek';
 }
@@ -25,10 +21,6 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<Conversation[]>([]);
   const [options, setOptions] = useState<ProcessingOptions>({
-    splitBySentences: true,
-    mergeShortLines: true,
-    extractDates: true,
-    autoTag: true,
     useAI: true,
     preferredAPI: 'qwen',
   });
@@ -39,151 +31,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     deepseekKey: 'sk-b86a70e55ae5489497b0e6980130e481',
   });
 
-  // 智能分割文本为句子
-  const splitIntoSentences = (text: string): string[] => {
-    // 按句号、问号、感叹号分割，但保留引号内的内容
-    const sentences = text.split(/(?<=[。！？])\s*/).filter(s => s.trim());
-    return sentences;
-  };
 
-  // 合并相关对话
-  const mergeRelatedConversations = (sentences: string[]): string[] => {
-    const merged: string[] = [];
-    let currentGroup: string[] = [];
-    
-    for (let i = 0; i < sentences.length; i++) {
-      const sentence = sentences[i];
-      const nextSentence = sentences[i + 1];
-      
-      // 添加到当前组
-      currentGroup.push(sentence);
-      
-      // 判断是否应该结束当前组
-      const shouldEndGroup = () => {
-        // 如果这是最后一个句子，结束组
-        if (i === sentences.length - 1) return true;
-        
-        // 如果下一句是新的主题（包含特定关键词），结束组
-        const nextKeywords = ['然后', '接着', '后来', '过了一会儿', '第二天', '今天', '明天'];
-        if (nextSentence && nextKeywords.some(keyword => nextSentence.includes(keyword))) {
-          return true;
-        }
-        
-        // 如果当前组已经有3个以上的句子，结束组
-        if (currentGroup.length >= 3) return true;
-        
-        // 如果下一句很短（少于5个字符），可能是语气词，继续组
-        if (nextSentence && nextSentence.length < 5) return false;
-        
-        // 如果当前句和下一句之间有明显的主题转换，结束组
-        const currentTopics = ['妈妈', '爸爸', '奶奶', '爷爷', '老师', '小朋友'];
-        const nextTopics = ['妈妈', '爸爸', '奶奶', '爷爷', '老师', '小朋友'];
-        
-        const currentHasTopic = currentTopics.some(topic => sentence.includes(topic));
-        const nextHasTopic = nextTopics.some(topic => nextSentence.includes(topic));
-        
-        if (currentHasTopic && nextHasTopic && !sentence.includes(nextSentence.split('')[0])) {
-          return true;
-        }
-        
-        return false;
-      };
-      
-      if (shouldEndGroup()) {
-        // 合并当前组
-        if (currentGroup.length > 0) {
-          merged.push(currentGroup.join(' '));
-          currentGroup = [];
-        }
-      }
-    }
-    
-    return merged;
-  };
-
-  // 合并短行
-  const mergeShortLines = (lines: string[]): string[] => {
-    const merged: string[] = [];
-    let currentLine = '';
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-
-      // 如果当前行很短（少于10个字符），尝试合并到下一行
-      if (currentLine && currentLine.length < 10 && !currentLine.endsWith('。') && !currentLine.endsWith('！') && !currentLine.endsWith('？')) {
-        currentLine += trimmed;
-      } else {
-        if (currentLine) {
-          merged.push(currentLine);
-        }
-        currentLine = trimmed;
-      }
-    }
-
-    if (currentLine) {
-      merged.push(currentLine);
-    }
-
-    return merged;
-  };
-
-  // 提取日期信息
-  const extractDate = (text: string): { date: string; cleanText: string } => {
-    // 匹配常见的日期格式
-    const datePatterns = [
-      /(\d{4})年(\d{1,2})月(\d{1,2})日/,
-      /(\d{1,2})月(\d{1,2})日/,
-      /(\d{4})-(\d{1,2})-(\d{1,2})/,
-      /(\d{1,2})\/(\d{1,2})\/(\d{4})/,
-    ];
-
-    for (const pattern of datePatterns) {
-      const match = text.match(pattern);
-      if (match) {
-        let year = new Date().getFullYear();
-        let month = 1;
-        let day = 1;
-
-        if (pattern.source.includes('年')) {
-          year = parseInt(match[1]);
-          month = parseInt(match[2]);
-          day = parseInt(match[3]);
-        } else if (pattern.source.includes('-')) {
-          year = parseInt(match[1]);
-          month = parseInt(match[2]);
-          day = parseInt(match[3]);
-        } else if (pattern.source.includes('/')) {
-          month = parseInt(match[1]);
-          day = parseInt(match[2]);
-          year = parseInt(match[3]);
-        }
-
-        const date = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        const cleanText = text.replace(pattern, '').trim();
-        return { date, cleanText };
-      }
-    }
-
-    return { date: new Date().toISOString().split('T')[0], cleanText: text };
-  };
-
-  // 自动生成标签
-  const generateTags = (text: string): string[] => {
-    const tags = ['导入', '哈哈'];
-    
-    // 根据内容自动添加标签
-    if (text.includes('妈妈') || text.includes('爸爸')) tags.push('家人');
-    if (text.includes('？') || text.includes('什么') || text.includes('为什么')) tags.push('好奇');
-    if (text.includes('！') || text.includes('哇') || text.includes('好')) tags.push('兴奋');
-    if (text.includes('不') || text.includes('不要')) tags.push('拒绝');
-    if (text.includes('谢谢') || text.includes('谢谢')) tags.push('礼貌');
-    if (text.includes('玩') || text.includes('游戏')) tags.push('游戏');
-    if (text.includes('吃') || text.includes('饭')) tags.push('饮食');
-    if (text.includes('睡') || text.includes('觉')) tags.push('睡眠');
-    
-    return tags;
-  };
 
   const processText = async () => {
     if (!text.trim()) return;
@@ -191,96 +39,39 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
     setIsProcessing(true);
     
     try {
-      let memories: Conversation[] = [];
-
-      if (options.useAI) {
-        // 使用AI处理
-        try {
-          const aiResults = await aiService.processText(text, options.preferredAPI);
-          
-          memories = aiResults.map((result, index) => ({
-            id: crypto.randomUUID(),
-            type: 'conversation',
-            title: `哈哈的对话 ${index + 1}`,
-            content: result.content,
-            date: result.date || new Date().toISOString().split('T')[0],
-            tags: result.tags,
-            childName: '哈哈',
-            age: '',
-            context: result.context || '',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-          }));
-        } catch (aiError) {
-          console.error('AI处理失败，使用备用方法:', aiError);
-          // 如果AI处理失败，使用传统方法
-          memories = processWithTraditionalMethod();
-        }
-      } else {
-        // 使用传统方法处理
-        memories = processWithTraditionalMethod();
+      console.log('开始AI处理，使用API:', options.preferredAPI);
+      const aiResults = await aiService.processText(text, options.preferredAPI);
+      console.log('AI处理结果:', aiResults);
+      
+      if (!aiResults || aiResults.length === 0) {
+        throw new Error('AI返回空结果');
       }
       
+      const memories: Conversation[] = aiResults.map((result, index) => ({
+        id: crypto.randomUUID(),
+        type: 'conversation' as const,
+        title: `哈哈的对话 ${index + 1}`,
+        content: result.content,
+        date: result.date || new Date().toISOString().split('T')[0],
+        tags: result.tags,
+        childName: '哈哈',
+        age: '',
+        context: result.context || '',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }));
+      
+      console.log('AI处理成功，生成', memories.length, '条记录');
       setPreview(memories);
     } catch (error) {
-      console.error('处理文本失败:', error);
-      alert('处理文本失败，请检查格式');
+      console.error('AI处理失败:', error);
+      alert('AI处理失败，请检查网络连接或API密钥');
     } finally {
       setIsProcessing(false);
     }
   };
 
-  const processWithTraditionalMethod = (): Conversation[] => {
-    let processedLines: string[] = [];
 
-    if (options.splitBySentences) {
-      // 按句子分割
-      const sentences = splitIntoSentences(text);
-      // 合并相关对话
-      processedLines = mergeRelatedConversations(sentences);
-    } else {
-      // 按行分割
-      processedLines = text.split('\n').filter(line => line.trim());
-    }
-
-    if (options.mergeShortLines && !options.splitBySentences) {
-      // 合并短行（仅在按行分割时使用）
-      processedLines = mergeShortLines(processedLines);
-    }
-
-    const memories: Conversation[] = [];
-    
-    processedLines.forEach((line, index) => {
-      const trimmedLine = line.trim();
-      if (trimmedLine) {
-        // 提取日期
-        const { date, cleanText } = options.extractDates ? extractDate(trimmedLine) : {
-          date: new Date().toISOString().split('T')[0],
-          cleanText: trimmedLine
-        };
-
-        // 生成标签
-        const tags = options.autoTag ? generateTags(cleanText) : ['导入', '哈哈'];
-
-        const memory: Conversation = {
-          id: crypto.randomUUID(),
-          type: 'conversation',
-          title: `哈哈的对话 ${index + 1}`,
-          content: cleanText,
-          date: date,
-          tags: tags,
-          childName: '哈哈',
-          age: '',
-          context: '',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        memories.push(memory);
-      }
-    });
-
-    return memories;
-  };
 
   const handleImport = () => {
     if (preview.length > 0) {
@@ -339,7 +130,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
               <Settings className="h-4 w-4 text-gray-600" />
               <h3 className="text-sm font-medium text-gray-900">处理选项</h3>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4">
               <label className="flex items-center space-x-2">
                 <input
                   type="checkbox"
@@ -351,46 +142,6 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                   <Brain className="h-4 w-4 mr-1" />
                   AI智能处理
                 </span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={options.splitBySentences}
-                  onChange={(e) => setOptions({...options, splitBySentences: e.target.checked})}
-                  disabled={options.useAI}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">智能分割并合并相关对话</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={options.mergeShortLines}
-                  onChange={(e) => setOptions({...options, mergeShortLines: e.target.checked})}
-                  disabled={options.useAI}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">合并短行</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={options.extractDates}
-                  onChange={(e) => setOptions({...options, extractDates: e.target.checked})}
-                  disabled={options.useAI}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">提取日期</span>
-              </label>
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={options.autoTag}
-                  onChange={(e) => setOptions({...options, autoTag: e.target.checked})}
-                  disabled={options.useAI}
-                  className="rounded"
-                />
-                <span className="text-sm text-gray-700">自动标签</span>
               </label>
             </div>
             

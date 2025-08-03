@@ -27,6 +27,7 @@ export class AIService {
         headers: {
           'Authorization': `Bearer ${this.qwenKey}`,
           'Content-Type': 'application/json',
+          'X-DashScope-SSE': 'enable',
         },
         body: JSON.stringify({
           model: 'qwen-turbo',
@@ -97,12 +98,11 @@ export class AIService {
       } catch (parseError) {
         console.error('Failed to parse AI response as JSON:', parseError);
         console.log('Raw AI response:', aiResponse);
-        // 如果JSON解析失败，使用备用处理
-        return this.fallbackProcessing(text);
+        throw new Error('AI返回的格式不正确');
       }
     } catch (error) {
       console.error('Qwen API error:', error);
-      return this.fallbackProcessing(text);
+      throw error;
     }
   }
 
@@ -180,37 +180,22 @@ export class AIService {
       } catch (parseError) {
         console.error('Failed to parse AI response as JSON:', parseError);
         console.log('Raw AI response:', aiResponse);
-        // 如果JSON解析失败，使用备用处理
-        return this.fallbackProcessing(text);
+        throw new Error('AI返回的格式不正确');
       }
     } catch (error) {
       console.error('DeepSeek API error:', error);
-      return this.fallbackProcessing(text);
+      throw error;
     }
   }
 
-  // 备用处理（当AI API失败时使用）
-  private fallbackProcessing(text: string): ConversationGroup[] {
-    const lines = text.split('\n').filter(line => line.trim());
-    return lines.map((line, index) => ({
-      content: line.trim(),
-      date: new Date().toISOString().split('T')[0],
-      tags: ['导入', '哈哈'],
-      context: `第${index + 1}条记录`
-    }));
-  }
+
 
   // 智能选择API处理
   async processText(text: string, preferredAPI: 'qwen' | 'deepseek' = 'qwen'): Promise<ConversationGroup[]> {
-    try {
-      if (preferredAPI === 'qwen') {
-        return await this.processWithQwen(text);
-      } else {
-        return await this.processWithDeepSeek(text);
-      }
-    } catch (error) {
-      console.error('AI processing failed, using fallback:', error);
-      return this.fallbackProcessing(text);
+    if (preferredAPI === 'qwen') {
+      return await this.processWithQwen(text);
+    } else {
+      return await this.processWithDeepSeek(text);
     }
   }
 } 
