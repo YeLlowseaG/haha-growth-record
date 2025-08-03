@@ -22,19 +22,21 @@ export class AIService {
   // 使用Qwen API处理对话
   async processWithQwen(text: string): Promise<ConversationGroup[]> {
     try {
+      console.log('使用Qwen API，密钥:', this.qwenKey.substring(0, 10) + '...');
+      
       const response = await fetch('https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${this.qwenKey}`,
           'Content-Type': 'application/json',
-          'X-DashScope-SSE': 'enable',
         },
         body: JSON.stringify({
           model: 'qwen-turbo',
-          messages: [
-            {
-              role: 'system',
-              content: `你是一个专门处理儿童对话记录的AI助手。请帮我分析以下文本，将其分割成有意义的对话组。
+          input: {
+            messages: [
+              {
+                role: 'system',
+                content: `你是一个专门处理儿童对话记录的AI助手。请帮我分析以下文本，将其分割成有意义的对话组。
 
 重要要求：
 1. 保持对话的完整性 - 如果是一段连续的对话，不要强行分割
@@ -59,16 +61,22 @@ export class AIService {
     "context": "哈哈和妈妈关于吃苹果的对话"
   }
 ]`
-            },
-            {
-              role: 'user',
-              content: text
-            }
-          ],
-          temperature: 0.3,
-          max_tokens: 2000
+              },
+              {
+                role: 'user',
+                content: text
+              }
+            ]
+          },
+          parameters: {
+            temperature: 0.3,
+            max_tokens: 2000
+          }
         })
       });
+
+      console.log('Qwen API响应状态:', response.status);
+      console.log('Qwen API响应头:', response.headers);
 
       if (!response.ok) {
         throw new Error(`Qwen API error: ${response.status}`);
@@ -192,10 +200,29 @@ export class AIService {
 
   // 智能选择API处理
   async processText(text: string, preferredAPI: 'qwen' | 'deepseek' = 'qwen'): Promise<ConversationGroup[]> {
+    console.log('开始处理文本，长度:', text.length);
+    console.log('选择的API:', preferredAPI);
+    
     if (preferredAPI === 'qwen') {
       return await this.processWithQwen(text);
     } else {
       return await this.processWithDeepSeek(text);
+    }
+  }
+
+  // 测试API连接
+  async testAPI(apiType: 'qwen' | 'deepseek'): Promise<boolean> {
+    try {
+      const testText = "测试文本";
+      if (apiType === 'qwen') {
+        await this.processWithQwen(testText);
+      } else {
+        await this.processWithDeepSeek(testText);
+      }
+      return true;
+    } catch (error) {
+      console.error(`${apiType} API测试失败:`, error);
+      return false;
     }
   }
 } 
