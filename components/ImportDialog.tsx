@@ -82,8 +82,8 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         } else {
           currentConversation = trimmedLine;
         }
-      } else if (trimmedLine.length > 5) {
-        // 可能是描述性文本，也加入对话
+      } else if (trimmedLine.length > 5 && !trimmedLine.match(/^\d{4}\.\d{1,2}\.\d{1,2}/)) {
+        // 可能是描述性文本，也加入对话（排除日期行）
         if (currentConversation) {
           currentConversation += '\n' + trimmedLine;
         } else {
@@ -200,6 +200,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         // 本地智能处理作为备用
         const localResults = processLocally(text);
         console.log('本地处理结果:', localResults);
+        console.log('第一个对话内容:', localResults[0]?.content);
         
         const memories: Conversation[] = localResults.map((result, index) => ({
           id: crypto.randomUUID(),
