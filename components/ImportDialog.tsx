@@ -28,7 +28,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
   // 初始化AI服务
   const aiService = new AIService({
     qwenKey: 'sk-2e0ccd4afce04e608b3eda9dce40e2de',
-    deepseekKey: 'sk-b86a70e55ae5489497b0e6980130e481',
+    deepseekKey: 'sk-0f273a605d75468eb410d88d1ad8877b',
   });
 
   console.log('AI服务已初始化，Qwen密钥:', 'sk-2e0ccd4afce04e608b3eda9dce40e2de'.substring(0, 10) + '...');
