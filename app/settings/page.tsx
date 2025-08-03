@@ -85,13 +85,13 @@ export default function SettingsPage() {
                   </div>
 
                   <div className="p-4 bg-red-50 rounded-lg">
-                    <h4 className="font-medium text-red-900 mb-2">清除所有数据</h4>
+                    <h4 className="font-medium text-red-900 mb-2">数据清理</h4>
                     <p className="text-sm text-red-800 mb-3">
-                      此操作将永久删除所有记录，请谨慎操作。
+                      删除导入错误的对话记录或清除所有数据。
                     </p>
-                    <button className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm">
-                      清除所有数据
-                    </button>
+                    <Link href="/cleanup" className="bg-red-500 hover:bg-red-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm inline-block">
+                      进入数据清理
+                    </Link>
                   </div>
                 </div>
               </div>

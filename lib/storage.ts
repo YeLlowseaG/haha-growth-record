@@ -161,3 +161,17 @@ export const cleanupOldData = (daysToKeep: number = 365): void => {
   
   saveMemories(filteredMemories);
 }; 
+
+// 删除所有对话记录
+export const deleteAllConversations = (): void => {
+  const memories = loadMemories();
+  const filtered = memories.filter(memory => memory.type !== 'conversation');
+  saveMemories(filtered);
+};
+
+// 删除所有记录
+export const deleteAllMemories = (): void => {
+  if (typeof window !== 'undefined') {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+}; 
