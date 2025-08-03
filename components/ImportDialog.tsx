@@ -21,7 +21,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
   const [isProcessing, setIsProcessing] = useState(false);
   const [preview, setPreview] = useState<Conversation[]>([]);
   const [options, setOptions] = useState<ProcessingOptions>({
-    useAI: true,
+    useAI: false,
     preferredAPI: 'qwen',
   });
 
@@ -35,7 +35,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
 
 
 
-  // 本地智能处理
+  // 本地智能处理 - 基于原始格式
   const processLocally = (text: string) => {
     const lines = text.split('\n').filter(line => line.trim());
     const conversations: Array<{content: string, date: string, tags: string[], context: string}> = [];
@@ -48,8 +48,8 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
       const trimmedLine = line.trim();
       if (!trimmedLine) continue;
       
-      // 检查是否是日期行
-      const dateMatch = trimmedLine.match(/^(\d{4})\.(\d{1,2})\.(\d{1,2})/);
+      // 检查是否是日期行 (支持多种格式)
+      const dateMatch = trimmedLine.match(/^(\d{4})[.-](\d{1,2})[.-](\d{1,2})/);
       if (dateMatch) {
         // 保存之前的对话
         if (currentConversation) {
@@ -69,7 +69,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
       }
       
       // 检查是否是标题行（如"洗澡时的对话"）
-      if (trimmedLine.includes('对话') && !trimmedLine.includes('：') && !trimmedLine.includes(':')) {
+      if (trimmedLine.includes('对话') && !trimmedLine.includes('：') && !trimmedLine.includes(':') && trimmedLine.length < 30) {
         currentContext = trimmedLine;
         continue;
       }
@@ -82,7 +82,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         } else {
           currentConversation = trimmedLine;
         }
-      } else if (trimmedLine.length > 5 && !trimmedLine.match(/^\d{4}\.\d{1,2}\.\d{1,2}/)) {
+      } else if (trimmedLine.length > 5 && !trimmedLine.match(/^\d{4}[.-]\d{1,2}[.-]\d{1,2}/)) {
         // 可能是描述性文本，也加入对话（排除日期行）
         if (currentConversation) {
           currentConversation += '\n' + trimmedLine;
@@ -251,7 +251,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
             <MessageCircle className="h-6 w-6 text-blue-500" />
-            <h2 className="text-xl font-semibold text-gray-900">智能导入哈哈的对话</h2>
+            <h2 className="text-xl font-semibold text-gray-900">直接导入哈哈的对话</h2>
           </div>
           <button
             onClick={handleClose}
@@ -267,13 +267,13 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-500 mt-0.5" />
               <div>
-                <h3 className="text-sm font-medium text-blue-900 mb-2">智能导入说明</h3>
+                <h3 className="text-sm font-medium text-blue-900 mb-2">直接导入说明</h3>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• 将 Word 文档中的内容复制粘贴到下面的文本框</li>
-                  <li>• 智能识别日期、对话内容和上下文</li>
-                  <li>• 自动合并相关的对话，保持对话的完整性</li>
-                  <li>• 支持多种日期格式：2022.3.30、2022-03-30等</li>
-                  <li>• 自动生成相关标签，如"好奇"、"兴奋"、"家人"等</li>
+                  <li>• 保持原始段落格式，不进行AI处理</li>
+                  <li>• 自动识别日期格式：2022.3.30、2022-03-30等</li>
+                  <li>• 自动识别标题行（包含"对话"的短行）</li>
+                  <li>• 智能生成相关标签，如"好奇"、"兴奋"、"家人"等</li>
                 </ul>
               </div>
             </div>
@@ -345,7 +345,7 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
               onChange={(e) => setText(e.target.value)}
               rows={8}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-              placeholder="将哈哈说的话复制粘贴到这里，支持多种格式..."
+              placeholder="将Word文档中的内容复制粘贴到这里，保持原始格式..."
             />
             <div className="mt-2 flex justify-between items-center">
               <span className="text-xs text-gray-500">
@@ -360,12 +360,12 @@ export default function ImportDialog({ isOpen, onClose, onImport }: ImportDialog
                 {isProcessing ? (
                   <span className="flex items-center">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {options.useAI ? 'AI处理中...' : '智能处理中...'}
+                    {options.useAI ? 'AI处理中...' : '处理中...'}
                   </span>
                 ) : (
                   <span className="flex items-center">
                     {options.useAI ? <Brain className="h-4 w-4 mr-1" /> : <Zap className="h-4 w-4 mr-1" />}
-                    {options.useAI ? 'AI智能处理' : '智能处理'}
+                    {options.useAI ? 'AI智能处理' : '直接处理'}
                   </span>
                 )}
               </button>
