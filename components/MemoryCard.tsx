@@ -48,31 +48,31 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
 
   return (
     <div className="card hover:shadow-lg transition-shadow duration-200">
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex items-center space-x-2">
+      <div className="flex items-start justify-between mb-3 sm:mb-4">
+        <div className="flex items-center space-x-2 min-w-0 flex-1">
           {getTypeIcon()}
-          <span className="text-sm font-medium text-gray-600">{getTypeLabel()}</span>
-          <span className="text-sm text-gray-400">•</span>
-          <span className="text-sm text-gray-500">{formatDate(memory.date)}</span>
+          <span className="text-xs sm:text-sm font-medium text-gray-600">{getTypeLabel()}</span>
+          <span className="text-xs sm:text-sm text-gray-400">•</span>
+          <span className="text-xs sm:text-sm text-gray-500 truncate">{formatDate(memory.date)}</span>
         </div>
         
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
           <button
             onClick={() => onEdit(memory)}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1.5 sm:p-1 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <Edit className="h-4 w-4" />
           </button>
           <button
             onClick={() => onDelete(memory.id)}
-            className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+            className="p-1.5 sm:p-1 text-gray-400 hover:text-red-500 transition-colors"
           >
             <Trash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{memory.title}</h3>
+      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{memory.title}</h3>
       
       <div className="mb-4">
         {memory.type === 'conversation' && 'age' in memory && memory.age && (
@@ -87,7 +87,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
               <pre className="whitespace-pre-wrap font-sans">{memory.content}</pre>
               <button
                 onClick={() => setShowFullContent(false)}
-                className="text-primary-500 hover:text-primary-600 text-sm ml-2"
+                className="text-primary-500 hover:text-primary-600 text-xs sm:text-sm ml-2 mt-1"
               >
                 收起
               </button>
@@ -99,7 +99,7 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
                   <pre className="whitespace-pre-wrap font-sans inline">{memory.content.substring(0, 100)}</pre>...
                   <button
                     onClick={() => setShowFullContent(true)}
-                    className="text-primary-500 hover:text-primary-600 text-sm ml-2"
+                    className="text-primary-500 hover:text-primary-600 text-xs sm:text-sm ml-2"
                   >
                     展开
                   </button>
@@ -149,13 +149,13 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
 
 
       {memory.tags.length > 0 && (
-        <div className="flex items-center space-x-2">
-          <Tag className="h-4 w-4 text-gray-400" />
-          <div className="flex flex-wrap gap-1">
+        <div className="flex items-start space-x-2 mt-3">
+          <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-1 flex-shrink-0" />
+          <div className="flex flex-wrap gap-1 min-w-0">
             {memory.tags.map((tag, index) => (
               <span
                 key={index}
-                className={getTagClasses(tag)}
+                className={`${getTagClasses(tag)} text-xs`}
               >
                 {tag}
               </span>

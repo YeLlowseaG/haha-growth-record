@@ -103,6 +103,7 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
           ref={fileInputRef}
           type="file"
           accept="image/*"
+          capture="environment"
           multiple
           onChange={handleFileSelect}
           className="hidden"
@@ -124,19 +125,40 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
             <Upload className="h-8 w-8 text-gray-400 mx-auto" />
             <div>
               <p className="text-sm font-medium text-gray-900">
-                点击上传或拖拽文件到此处
+                <span className="hidden sm:inline">点击上传或拖拽文件到此处</span>
+                <span className="sm:hidden">点击拍照或选择照片</span>
               </p>
               <p className="text-xs text-gray-500 mt-1">
                 支持 JPG、PNG 格式，最大 10MB，可多选
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="btn-primary text-sm"
-            >
-              选择文件
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.capture = 'environment';
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="btn-primary text-sm flex-1 sm:hidden"
+              >
+                📷 拍照
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (fileInputRef.current) {
+                    fileInputRef.current.capture = '';
+                    fileInputRef.current.click();
+                  }
+                }}
+                className="btn-secondary text-sm flex-1"
+              >
+                <span className="sm:hidden">🖼️ 选择照片</span>
+                <span className="hidden sm:inline">选择文件</span>
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -178,13 +200,13 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
       {currentUrls.length > 0 && (
         <div className="space-y-2">
           <p className="text-sm font-medium text-gray-900">已上传的图片 ({currentUrls.length})</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {currentUrls.map((url, index) => (
               <div key={index} className="relative">
                 <img
                   src={url}
                   alt={`预览 ${index + 1}`}
-                  className="w-full h-32 object-cover rounded-lg"
+                  className="w-full h-24 sm:h-32 object-cover rounded-lg"
                 />
                 <button
                   type="button"

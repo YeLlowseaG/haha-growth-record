@@ -158,19 +158,47 @@ export default function Home() {
     <div className="min-h-screen bg-gray-50">
       <Header onSearch={handleSearch} onAddNew={handleAddNew} />
       
-      <div className="flex">
-        <Sidebar
-          selectedType={selectedType}
-          onTypeChange={setSelectedType}
-          totalCount={memories.length}
-          typeCounts={typeCounts}
-        />
+      <div className="flex flex-col lg:flex-row">
+        {/* 移动端侧边栏 */}
+        <div className="lg:hidden">
+          <div className="bg-white border-b border-gray-200 p-4">
+            <div className="flex space-x-2 overflow-x-auto">
+              {[
+                { type: 'all' as const, label: '全部', count: memories.length },
+                { type: 'conversation' as const, label: '对话', count: typeCounts.conversation },
+                { type: 'photo' as const, label: '照片', count: typeCounts.photo },
+              ].map(({ type, label, count }) => (
+                <button
+                  key={type}
+                  onClick={() => setSelectedType(type)}
+                  className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    selectedType === type
+                      ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {label} ({count})
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
         
-        <main className="flex-1 p-6">
+        {/* 桌面系统侧边栏 */}
+        <div className="hidden lg:block">
+          <Sidebar
+            selectedType={selectedType}
+            onTypeChange={setSelectedType}
+            totalCount={memories.length}
+            typeCounts={typeCounts}
+          />
+        </div>
+        
+        <main className="flex-1 p-4 lg:p-6">
           <div className="max-w-6xl mx-auto">
             {/* Stats */}
-            <div className="mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-4 lg:mb-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -212,28 +240,29 @@ export default function Home() {
 
             {/* Content */}
             {filteredMemories.length === 0 ? (
-              <div className="text-center py-12">
-                <Inbox className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="text-center py-8 lg:py-12">
+                <Inbox className="h-12 w-12 lg:h-16 lg:w-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-2">
                   {searchQuery ? '没有找到哈哈的相关记录' : '还没有哈哈的成长记录'}
                 </h3>
-                <p className="text-gray-600 mb-6">
+                <p className="text-sm lg:text-base text-gray-600 mb-6 px-4">
                   {searchQuery 
                     ? '尝试使用不同的关键词搜索哈哈的记录'
                     : '开始记录哈哈的成长瞬间吧！'
                   }
                 </p>
                 {!searchQuery && (
-                  <div className="space-y-3">
+                  <div className="space-y-3 px-4">
                     <button
                       onClick={handleAddNew}
-                      className="btn-primary"
+                      className="btn-primary w-full sm:w-auto"
                     >
                       记录哈哈的第一个瞬间
                     </button>
+                    <br />
                     <button
                       onClick={() => setIsImportOpen(true)}
-                      className="flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
+                      className="inline-flex items-center space-x-2 text-sm text-primary-600 hover:text-primary-700"
                     >
                       <Download className="h-4 w-4" />
                       <span>导入哈哈的对话</span>
@@ -242,7 +271,7 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
                 {filteredMemories.map((memory) => (
                   <MemoryCard
                     key={memory.id}
