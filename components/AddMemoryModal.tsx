@@ -18,6 +18,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
   const [content, setContent] = useState(editingMemory?.content || '');
   const [date, setDate] = useState(editingMemory?.date || new Date().toISOString().split('T')[0]);
   const [tags, setTags] = useState(editingMemory?.tags?.join(', ') || '');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Conversation specific fields - 默认填入哈哈的信息
   const [childName, setChildName] = useState(
@@ -78,48 +79,61 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
     }
   }, [editingMemory]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
-    const now = new Date().toISOString();
+    if (isSubmitting) return;
     
-    let memory: MemoryType;
+    setIsSubmitting(true);
     
-    if (type === 'conversation') {
-      memory = {
-        id: editingMemory?.id || crypto.randomUUID(),
-        type: 'conversation',
-        title,
-        content,
-        date,
-        tags: tagArray,
-        childName,
-        age,
-        context: context || undefined,
-        createdAt: editingMemory?.createdAt || now,
-        updatedAt: now,
-      } as Conversation;
-    } else {
-      memory = {
-        id: editingMemory?.id || crypto.randomUUID(),
-        type: 'photo',
-        title,
-        content,
-        date,
-        tags: tagArray,
-        imageUrls: mediaUrls,
-        imageUrl: mediaUrls[0] || undefined, // 向后兼容
-        createdAt: editingMemory?.createdAt || now,
-        updatedAt: now,
-      } as Photo;
+    try {
+      const tagArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+      const now = new Date().toISOString();
+      
+      let memory: MemoryType;
+      
+      if (type === 'conversation') {
+        memory = {
+          id: editingMemory?.id || crypto.randomUUID(),
+          type: 'conversation',
+          title,
+          content,
+          date,
+          tags: tagArray,
+          childName,
+          age,
+          context: context || undefined,
+          createdAt: editingMemory?.createdAt || now,
+          updatedAt: now,
+        } as Conversation;
+      } else {
+        memory = {
+          id: editingMemory?.id || crypto.randomUUID(),
+          type: 'photo',
+          title,
+          content,
+          date,
+          tags: tagArray,
+          imageUrls: mediaUrls,
+          imageUrl: mediaUrls[0] || undefined, // 向后兼容
+          createdAt: editingMemory?.createdAt || now,
+          updatedAt: now,
+        } as Photo;
+      }
+      
+      await onSave(memory);
+      handleClose();
+    } catch (error) {
+      console.error('保存失败:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setIsSubmitting(false);
     }
-    
-    onSave(memory);
-    handleClose();
   };
 
   const handleClose = () => {
+    if (isSubmitting) return; // 上传中禁止关闭
+    
     setType('conversation');
     setTitle('');
     setContent('');
@@ -129,6 +143,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
     setAge('');
     setContext('');
     setMediaUrls([]);
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -143,7 +158,12 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
           </h2>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            disabled={isSubmitting}
+            className={`transition-colors p-1 ${
+              isSubmitting 
+                ? 'text-gray-300 cursor-not-allowed' 
+                : 'text-gray-400 hover:text-gray-600'
+            }`}
           >
             <X className="h-5 w-5 sm:h-6 sm:w-6" />
           </button>
@@ -275,15 +295,33 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
             <button
               type="button"
               onClick={handleClose}
-              className="btn-secondary w-full sm:w-auto order-2 sm:order-1"
+              disabled={isSubmitting}
+              className={`w-full sm:w-auto order-2 sm:order-1 ${
+                isSubmitting 
+                  ? 'btn-secondary opacity-50 cursor-not-allowed' 
+                  : 'btn-secondary'
+              }`}
             >
               取消
             </button>
             <button
               type="submit"
-              className="btn-primary w-full sm:w-auto order-1 sm:order-2"
+              disabled={isSubmitting}
+              className={`w-full sm:w-auto order-1 sm:order-2 flex items-center justify-center space-x-2 ${
+                isSubmitting 
+                  ? 'btn-primary opacity-75 cursor-not-allowed' 
+                  : 'btn-primary'
+              }`}
             >
-              {editingMemory ? '保存修改' : '记录哈哈'}
+              {isSubmitting && (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              )}
+              <span>
+                {isSubmitting 
+                  ? '上传中...' 
+                  : (editingMemory ? '保存修改' : '记录哈哈')
+                }
+              </span>
             </button>
           </div>
         </form>
