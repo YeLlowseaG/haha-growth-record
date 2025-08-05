@@ -126,21 +126,45 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
                 <img
                   src={images[0]}
                   alt={memory.title}
-                  className="w-full h-48 object-cover rounded-lg"
+                  className="w-full h-48 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => window.open(images[0], '_blank')}
                 />
               );
             }
             
+            // 多张照片时的展示逻辑
+            const displayImages = images.slice(0, 4); // 最多显示4张
+            const remainingCount = images.length - 4;
+            
             return (
-              <div className="grid grid-cols-2 gap-2">
-                {images.map((url: string, index: number) => (
-                  <img
-                    key={index}
-                    src={url}
-                    alt={`${memory.title} - ${index + 1}`}
-                    className="w-full h-32 object-cover rounded-lg"
-                  />
-                ))}
+              <div className="space-y-2">
+                <div className={`grid gap-2 ${
+                  displayImages.length === 2 ? 'grid-cols-2' : 
+                  displayImages.length === 3 ? 'grid-cols-3' : 
+                  'grid-cols-2'
+                }`}>
+                  {displayImages.map((url: string, index: number) => (
+                    <div key={index} className="relative">
+                      <img
+                        src={url}
+                        alt={`${memory.title} - ${index + 1}`}
+                        className="w-full h-24 sm:h-32 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => window.open(url, '_blank')}
+                      />
+                      {/* 如果是第4张图且还有更多图片，显示剩余数量 */}
+                      {index === 3 && remainingCount > 0 && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
+                          <span className="text-white font-semibold">+{remainingCount}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {images.length > 1 && (
+                  <p className="text-xs text-gray-500 text-center">
+                    共 {images.length} 张照片 · 点击查看大图
+                  </p>
+                )}
               </div>
             );
           })()} 

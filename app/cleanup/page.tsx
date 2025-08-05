@@ -13,7 +13,7 @@ export default function CleanupPage() {
   useEffect(() => {
     const loadData = async () => {
       const data = await loadMemories();
-      setMemories(data);
+      setMemories(data.memories);
     };
     loadData();
   }, []);
@@ -23,7 +23,7 @@ export default function CleanupPage() {
     try {
       await deleteAllConversations();
       const updatedMemories = await loadMemories();
-      setMemories(updatedMemories);
+      setMemories(updatedMemories.memories);
       setDeleted(true);
     } catch (error) {
       console.error('删除对话失败:', error);

@@ -8,8 +8,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const offset = (page - 1) * limit;
     
     let query = 'SELECT * FROM memories';
+    let countQuery = 'SELECT COUNT(*) FROM memories';
     const conditions: string[] = [];
     const values: any[] = [];
     
@@ -24,12 +28,18 @@ export async function GET(request: NextRequest) {
     }
     
     if (conditions.length > 0) {
-      query += ' WHERE ' + conditions.join(' AND ');
+      const whereClause = ' WHERE ' + conditions.join(' AND ');
+      query += whereClause;
+      countQuery += whereClause;
     }
     
     query += ' ORDER BY created_at DESC';
+    query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+    values.push(limit, offset);
     
     const result = await sql.query(query, values);
+    const countResult = await sql.query(countQuery, values.slice(0, -2)); // 移除 limit 和 offset 参数
+    const totalCount = parseInt(countResult.rows[0].count);
     
     // 转换数据库行为前端类型
     const memories: MemoryType[] = result.rows.map(row => {
@@ -64,7 +74,16 @@ export async function GET(request: NextRequest) {
       }
     });
     
-    return NextResponse.json(memories);
+    return NextResponse.json({
+      memories,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasMore: page * limit < totalCount
+      }
+    });
   } catch (error) {
     console.error('获取记录失败:', error);
     return NextResponse.json(

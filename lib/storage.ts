@@ -17,16 +17,36 @@ export const initDatabase = async (): Promise<boolean> => {
   }
 };
 
-export const loadMemories = async (): Promise<MemoryType[]> => {
+export interface PaginatedResponse {
+  memories: MemoryType[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasMore: boolean;
+  };
+}
+
+export const loadMemories = async (page: number = 1, limit: number = 20): Promise<PaginatedResponse> => {
   try {
-    const response = await fetch(API_BASE);
+    const response = await fetch(`${API_BASE}?page=${page}&limit=${limit}`);
     if (!response.ok) {
       throw new Error('获取记录失败');
     }
     return await response.json();
   } catch (error) {
     console.error('加载记录失败:', error);
-    return [];
+    return {
+      memories: [],
+      pagination: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+        hasMore: false
+      }
+    };
   }
 };
 

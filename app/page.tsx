@@ -7,7 +7,7 @@ import MemoryCard from '@/components/MemoryCard';
 import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
-import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType, initDatabase } from '@/lib/storage';
+import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType, initDatabase, PaginatedResponse } from '@/lib/storage';
 import { Inbox, Smile, Download } from 'lucide-react';
 
 export default function Home() {
@@ -30,11 +30,11 @@ export default function Home() {
         await initDatabase();
         
         // 加载记录
-        const loadedMemories = await loadMemories();
+        const response = await loadMemories();
         
         if (mounted) {
-          setMemories(loadedMemories);
-          setFilteredMemories(loadedMemories);
+          setMemories(response.memories);
+          setFilteredMemories(response.memories);
         }
       } catch (error) {
         console.error('初始化失败:', error);
@@ -108,8 +108,8 @@ export default function Home() {
       }
       
       // Reload memories
-      const updatedMemories = await loadMemories();
-      setMemories(updatedMemories);
+      const response = await loadMemories();
+      setMemories(response.memories);
     } catch (error) {
       console.error('保存记录失败:', error);
       alert('保存失败，请重试');
@@ -126,8 +126,8 @@ export default function Home() {
       try {
         const success = await deleteMemory(id);
         if (success) {
-          const updatedMemories = await loadMemories();
-          setMemories(updatedMemories);
+          const response = await loadMemories();
+          setMemories(response.memories);
         } else {
           alert('删除失败，请重试');
         }
@@ -145,8 +145,8 @@ export default function Home() {
         importedMemories.map(memory => addMemory(memory))
       );
       
-      const updatedMemories = await loadMemories();
-      setMemories(updatedMemories);
+      const response = await loadMemories();
+      setMemories(response.memories);
     } catch (error) {
       console.error('导入记录失败:', error);
       alert('导入失败，请重试');
