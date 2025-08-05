@@ -18,6 +18,7 @@ export default function Home() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingMemory, setEditingMemory] = useState<MemoryType | undefined>();
+  const [isLoading, setIsLoading] = useState(true);
 
   // Load memories on component mount
   useEffect(() => {
@@ -37,6 +38,10 @@ export default function Home() {
         }
       } catch (error) {
         console.error('初始化失败:', error);
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
       }
     };
     
@@ -196,6 +201,14 @@ export default function Home() {
         
         <main className="flex-1 p-4 lg:p-6">
           <div className="max-w-6xl mx-auto">
+            {/* Loading State */}
+            {isLoading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">正在加载哈哈的记录...</p>
+              </div>
+            ) : (
+              <>
             {/* Stats */}
             <div className="mb-4 lg:mb-6">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
@@ -281,6 +294,8 @@ export default function Home() {
                   />
                 ))}
               </div>
+            )}
+              </>
             )}
           </div>
         </main>
