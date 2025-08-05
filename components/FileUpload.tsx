@@ -103,7 +103,6 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          capture="environment"
           multiple
           onChange={handleFileSelect}
           className="hidden"
@@ -137,7 +136,7 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
                 type="button"
                 onClick={() => {
                   if (fileInputRef.current) {
-                    fileInputRef.current.capture = 'environment';
+                    fileInputRef.current.setAttribute('capture', 'environment');
                     fileInputRef.current.click();
                   }
                 }}
@@ -149,7 +148,7 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
                 type="button"
                 onClick={() => {
                   if (fileInputRef.current) {
-                    fileInputRef.current.capture = '';
+                    fileInputRef.current.removeAttribute('capture');
                     fileInputRef.current.click();
                   }
                 }}
