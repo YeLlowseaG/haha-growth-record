@@ -1,6 +1,6 @@
 export interface Memory {
   id: string;
-  type: 'conversation' | 'photo' | 'video';
+  type: 'conversation' | 'photo';
   title: string;
   content: string;
   date: string;
@@ -23,11 +23,4 @@ export interface Photo extends Memory {
   location?: string;
 }
 
-export interface Video extends Memory {
-  type: 'video';
-  videoUrl: string;
-  duration?: number;
-  thumbnail?: string;
-}
-
-export type MemoryType = Conversation | Photo | Video; 
+export type MemoryType = Conversation | Photo; 

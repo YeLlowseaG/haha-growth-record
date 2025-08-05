@@ -92,7 +92,6 @@ export default function Home() {
   const typeCounts = {
     conversation: memories.filter(m => m.type === 'conversation').length,
     photo: memories.filter(m => m.type === 'photo').length,
-    video: memories.filter(m => m.type === 'video').length,
   };
 
   return (
@@ -111,7 +110,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto">
             {/* Stats */}
             <div className="mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -148,17 +147,6 @@ export default function Home() {
                   </div>
                 </div>
                 
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Smile className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">哈哈的视频</p>
-                      <p className="text-2xl font-bold text-purple-600">{typeCounts.video}</p>
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
 

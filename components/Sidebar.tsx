@@ -1,6 +1,6 @@
 'use client';
 
-import { MessageCircle, Camera, Video, Filter, Calendar } from 'lucide-react';
+import { MessageCircle, Camera, Filter, Calendar } from 'lucide-react';
 import { MemoryType } from '@/types';
 
 interface SidebarProps {
@@ -10,7 +10,6 @@ interface SidebarProps {
   typeCounts: {
     conversation: number;
     photo: number;
-    video: number;
   };
 }
 
@@ -19,7 +18,6 @@ export default function Sidebar({ selectedType, onTypeChange, totalCount, typeCo
     { type: 'all' as const, icon: Filter, label: '哈哈的所有记录', count: totalCount, color: 'gray' },
     { type: 'conversation' as const, icon: MessageCircle, label: '哈哈的对话', count: typeCounts.conversation, color: 'blue' },
     { type: 'photo' as const, icon: Camera, label: '哈哈的照片', count: typeCounts.photo, color: 'green' },
-    { type: 'video' as const, icon: Video, label: '哈哈的视频', count: typeCounts.video, color: 'purple' },
   ];
 
   return (
@@ -66,13 +64,6 @@ export default function Sidebar({ selectedType, onTypeChange, totalCount, typeCo
             <div>
               <p className="font-medium text-gray-700">哈哈的照片</p>
               <p className="text-xs">保存哈哈珍贵的照片瞬间</p>
-            </div>
-          </div>
-          <div className="flex items-start space-x-2">
-            <Video className="h-4 w-4 text-purple-500 mt-0.5" />
-            <div>
-              <p className="font-medium text-gray-700">哈哈的视频</p>
-              <p className="text-xs">记录哈哈动态的成长时刻</p>
             </div>
           </div>
         </div>

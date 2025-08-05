@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { MessageCircle, Camera, Video, Edit, Trash2, Tag } from 'lucide-react';
+import { MessageCircle, Camera, Edit, Trash2, Tag } from 'lucide-react';
 import { MemoryType } from '@/types';
 import { getTagClasses } from '@/lib/tag-colors';
 
@@ -22,8 +22,6 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
         return <MessageCircle className="h-5 w-5 text-blue-500" />;
       case 'photo':
         return <Camera className="h-5 w-5 text-green-500" />;
-      case 'video':
-        return <Video className="h-5 w-5 text-purple-500" />;
       default:
         return null;
     }
@@ -35,8 +33,6 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
         return '对话';
       case 'photo':
         return '照片';
-      case 'video':
-        return '视频';
       default:
         return '';
     }
@@ -126,15 +122,6 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
         </div>
       )}
 
-      {memory.type === 'video' && 'videoUrl' in memory && memory.videoUrl && (
-        <div className="mb-4">
-          <video
-            src={memory.videoUrl}
-            controls
-            className="w-full h-48 object-cover rounded-lg"
-          />
-        </div>
-      )}
 
       {memory.tags.length > 0 && (
         <div className="flex items-center space-x-2">

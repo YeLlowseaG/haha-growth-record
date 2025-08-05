@@ -28,7 +28,6 @@ export default function CleanupPage() {
 
   const conversations = memories.filter(m => m.type === 'conversation');
   const photos = memories.filter(m => m.type === 'photo');
-  const videos = memories.filter(m => m.type === 'video');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -44,7 +43,7 @@ export default function CleanupPage() {
         {/* 当前数据统计 */}
         <div className="bg-white rounded-lg shadow p-6 mb-6">
           <h2 className="text-lg font-semibold mb-4">当前数据统计</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="text-center p-4 bg-blue-50 rounded-lg">
               <div className="text-2xl font-bold text-blue-600">{conversations.length}</div>
               <div className="text-sm text-gray-600">对话记录</div>
@@ -52,10 +51,6 @@ export default function CleanupPage() {
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-2xl font-bold text-green-600">{photos.length}</div>
               <div className="text-sm text-gray-600">照片记录</div>
-            </div>
-            <div className="text-center p-4 bg-purple-50 rounded-lg">
-              <div className="text-2xl font-bold text-purple-600">{videos.length}</div>
-              <div className="text-sm text-gray-600">视频记录</div>
             </div>
           </div>
         </div>
@@ -74,7 +69,7 @@ export default function CleanupPage() {
                 <div>
                   <h3 className="font-medium text-gray-900">删除所有对话记录</h3>
                   <p className="text-sm text-gray-600">
-                    这将删除所有哈哈的对话记录，但保留照片和视频
+                    这将删除所有哈哈的对话记录，但保留照片
                   </p>
                 </div>
                 <button
@@ -103,7 +98,7 @@ export default function CleanupPage() {
                 <div>
                   <h3 className="font-medium text-red-900">删除所有记录</h3>
                   <p className="text-sm text-red-700">
-                    这将删除所有记录，包括对话、照片和视频
+                    这将删除所有记录，包括对话和照片
                   </p>
                 </div>
                 <button

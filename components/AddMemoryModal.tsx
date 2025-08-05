@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, MessageCircle, Camera, Video, Tag } from 'lucide-react';
+import { X, MessageCircle, Camera, Tag } from 'lucide-react';
 import FileUpload from './FileUpload';
-import { MemoryType, Conversation, Photo, Video as VideoType } from '@/types';
+import { MemoryType, Conversation, Photo } from '@/types';
 
 interface AddMemoryModalProps {
   isOpen: boolean;
@@ -13,7 +13,7 @@ interface AddMemoryModalProps {
 }
 
 export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory }: AddMemoryModalProps) {
-  const [type, setType] = useState<'conversation' | 'photo' | 'video'>(editingMemory?.type || 'conversation');
+  const [type, setType] = useState<'conversation' | 'photo'>(editingMemory?.type || 'conversation');
   const [title, setTitle] = useState(editingMemory?.title || '');
   const [content, setContent] = useState(editingMemory?.content || '');
   const [date, setDate] = useState(editingMemory?.date || new Date().toISOString().split('T')[0]);
@@ -30,10 +30,9 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
     editingMemory?.type === 'conversation' ? (editingMemory as Conversation).context || '' : ''
   );
   
-  // Photo/Video specific fields
+  // Photo specific fields
   const [mediaUrl, setMediaUrl] = useState(
-    editingMemory?.type === 'photo' ? (editingMemory as Photo).imageUrl :
-    editingMemory?.type === 'video' ? (editingMemory as VideoType).videoUrl : ''
+    editingMemory?.type === 'photo' ? (editingMemory as Photo).imageUrl : ''
   );
 
   // 更新状态当editingMemory变化时
@@ -58,8 +57,6 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       
       if (editingMemory.type === 'photo') {
         setMediaUrl((editingMemory as Photo).imageUrl);
-      } else if (editingMemory.type === 'video') {
-        setMediaUrl((editingMemory as VideoType).videoUrl);
       } else {
         setMediaUrl('');
       }
@@ -99,7 +96,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
         createdAt: editingMemory?.createdAt || now,
         updatedAt: now,
       } as Conversation;
-    } else if (type === 'photo') {
+    } else {
       memory = {
         id: editingMemory?.id || crypto.randomUUID(),
         type: 'photo',
@@ -111,18 +108,6 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
         createdAt: editingMemory?.createdAt || now,
         updatedAt: now,
       } as Photo;
-    } else {
-      memory = {
-        id: editingMemory?.id || crypto.randomUUID(),
-        type: 'video',
-        title,
-        content,
-        date,
-        tags: tagArray,
-        videoUrl: mediaUrl,
-        createdAt: editingMemory?.createdAt || now,
-        updatedAt: now,
-      } as VideoType;
     }
     
     onSave(memory);
@@ -163,11 +148,10 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
           {/* Type Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-3">记录类型</label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { type: 'conversation' as const, icon: MessageCircle, label: '哈哈的对话', color: 'blue' },
                 { type: 'photo' as const, icon: Camera, label: '哈哈的照片', color: 'green' },
-                { type: 'video' as const, icon: Video, label: '哈哈的视频', color: 'purple' },
               ].map(({ type: optionType, icon: Icon, label, color }) => (
                 <button
                   key={optionType}
@@ -251,11 +235,11 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
             </div>
           )}
 
-          {/* File Upload for Photo/Video */}
-          {(type === 'photo' || type === 'video') && (
+          {/* File Upload for Photo */}
+          {type === 'photo' && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-3">
-                {type === 'photo' ? '上传哈哈的照片' : '上传哈哈的视频'}
+                上传哈哈的照片
               </label>
               
               <FileUpload
