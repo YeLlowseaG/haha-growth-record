@@ -17,17 +17,22 @@ export default function StorageManager() {
     setStorageInfo(info);
   };
 
-  const handleExport = () => {
-    const data = exportData();
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kids-memories-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleExport = async () => {
+    try {
+      const data = await exportData();
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `kids-memories-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请重试');
+    }
   };
 
   const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,14 +40,20 @@ export default function StorageManager() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const content = e.target?.result as string;
-      if (importData(content)) {
-        alert('数据导入成功！');
-        updateStorageInfo();
-        window.location.reload();
-      } else {
-        alert('数据格式错误，导入失败');
+      try {
+        const success = await importData(content);
+        if (success) {
+          alert('数据导入成功！');
+          updateStorageInfo();
+          window.location.reload();
+        } else {
+          alert('数据格式错误，导入失败');
+        }
+      } catch (error) {
+        console.error('导入失败:', error);
+        alert('数据导入失败，请重试');
       }
     };
     reader.readAsText(file);

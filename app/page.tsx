@@ -7,7 +7,7 @@ import MemoryCard from '@/components/MemoryCard';
 import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
-import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType } from '@/lib/storage';
+import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType, initDatabase } from '@/lib/storage';
 import { Inbox, Smile, Download } from 'lucide-react';
 
 export default function Home() {
@@ -21,29 +21,68 @@ export default function Home() {
 
   // Load memories on component mount
   useEffect(() => {
-    const loadedMemories = loadMemories();
-    setMemories(loadedMemories);
-    setFilteredMemories(loadedMemories);
+    let mounted = true;
+    
+    const initAndLoadMemories = async () => {
+      try {
+        // 初始化数据库
+        await initDatabase();
+        
+        // 加载记录
+        const loadedMemories = await loadMemories();
+        
+        if (mounted) {
+          setMemories(loadedMemories);
+          setFilteredMemories(loadedMemories);
+        }
+      } catch (error) {
+        console.error('初始化失败:', error);
+      }
+    };
+    
+    initAndLoadMemories();
+    
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   // Filter memories based on type and search
   useEffect(() => {
-    let filtered = memories;
-
-    // Filter by type
-    if (selectedType !== 'all') {
-      filtered = getMemoriesByType(selectedType);
-    }
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = searchMemories(searchQuery);
-      if (selectedType !== 'all') {
-        filtered = filtered.filter(memory => memory.type === selectedType);
+    let mounted = true;
+    
+    const filterMemories = async () => {
+      try {
+        let filtered: MemoryType[];
+        
+        // 如果有搜索查询，使用搜索API
+        if (searchQuery.trim()) {
+          filtered = await searchMemories(searchQuery);
+          // 如果还有类型筛选，进一步过滤
+          if (selectedType !== 'all') {
+            filtered = filtered.filter(memory => memory.type === selectedType);
+          }
+        } else if (selectedType !== 'all') {
+          // 只有类型筛选
+          filtered = await getMemoriesByType(selectedType);
+        } else {
+          // 没有筛选，使用已加载的数据
+          filtered = memories;
+        }
+        
+        if (mounted) {
+          setFilteredMemories(filtered);
+        }
+      } catch (error) {
+        console.error('筛选记录失败:', error);
       }
-    }
-
-    setFilteredMemories(filtered);
+    };
+    
+    filterMemories();
+    
+    return () => {
+      mounted = false;
+    };
   }, [memories, selectedType, searchQuery]);
 
   const handleSearch = (query: string) => {
@@ -55,16 +94,21 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const handleSaveMemory = (memory: MemoryType) => {
-    if (editingMemory) {
-      updateMemory(memory.id, memory);
-    } else {
-      addMemory(memory);
+  const handleSaveMemory = async (memory: MemoryType) => {
+    try {
+      if (editingMemory) {
+        await updateMemory(memory.id, memory);
+      } else {
+        await addMemory(memory);
+      }
+      
+      // Reload memories
+      const updatedMemories = await loadMemories();
+      setMemories(updatedMemories);
+    } catch (error) {
+      console.error('保存记录失败:', error);
+      alert('保存失败，请重试');
     }
-    
-    // Reload memories
-    const updatedMemories = loadMemories();
-    setMemories(updatedMemories);
   };
 
   const handleEditMemory = (memory: MemoryType) => {
@@ -72,20 +116,36 @@ export default function Home() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteMemory = (id: string) => {
+  const handleDeleteMemory = async (id: string) => {
     if (confirm('确定要删除这条哈哈的记录吗？')) {
-      deleteMemory(id);
-      const updatedMemories = loadMemories();
-      setMemories(updatedMemories);
+      try {
+        const success = await deleteMemory(id);
+        if (success) {
+          const updatedMemories = await loadMemories();
+          setMemories(updatedMemories);
+        } else {
+          alert('删除失败，请重试');
+        }
+      } catch (error) {
+        console.error('删除记录失败:', error);
+        alert('删除失败，请重试');
+      }
     }
   };
 
-  const handleImportMemories = (importedMemories: Conversation[]) => {
-    importedMemories.forEach(memory => {
-      addMemory(memory);
-    });
-    const updatedMemories = loadMemories();
-    setMemories(updatedMemories);
+  const handleImportMemories = async (importedMemories: Conversation[]) => {
+    try {
+      // 并行上传所有记录
+      await Promise.all(
+        importedMemories.map(memory => addMemory(memory))
+      );
+      
+      const updatedMemories = await loadMemories();
+      setMemories(updatedMemories);
+    } catch (error) {
+      console.error('导入记录失败:', error);
+      alert('导入失败，请重试');
+    }
   };
 
 

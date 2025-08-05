@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Trash2, AlertTriangle, ArrowLeft, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { deleteAllConversations, deleteAllMemories, loadMemories } from '@/lib/storage';
@@ -8,21 +8,38 @@ import { deleteAllConversations, deleteAllMemories, loadMemories } from '@/lib/s
 export default function CleanupPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleted, setDeleted] = useState(false);
-  const [memories, setMemories] = useState(loadMemories());
+  const [memories, setMemories] = useState<any[]>([]);
+  
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await loadMemories();
+      setMemories(data);
+    };
+    loadData();
+  }, []);
 
-  const handleDeleteConversations = () => {
+  const handleDeleteConversations = async () => {
     setIsDeleting(true);
-    deleteAllConversations();
-    setMemories(loadMemories());
-    setDeleted(true);
+    try {
+      await deleteAllConversations();
+      const updatedMemories = await loadMemories();
+      setMemories(updatedMemories);
+      setDeleted(true);
+    } catch (error) {
+      console.error('删除对话失败:', error);
+    }
     setIsDeleting(false);
   };
 
-  const handleDeleteAll = () => {
+  const handleDeleteAll = async () => {
     setIsDeleting(true);
-    deleteAllMemories();
-    setMemories([]);
-    setDeleted(true);
+    try {
+      await deleteAllMemories();
+      setMemories([]);
+      setDeleted(true);
+    } catch (error) {
+      console.error('删除所有记录失败:', error);
+    }
     setIsDeleting(false);
   };
 
