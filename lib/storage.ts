@@ -59,14 +59,41 @@ export const getMemoriesByType = (type: MemoryType['type']): MemoryType[] => {
 // 清理过大的数据
 const cleanLargeData = (memories: MemoryType[]): MemoryType[] => {
   return memories.map(memory => {
-    if (memory.type === 'photo' && 'imageUrl' in memory) {
+    if (memory.type === 'photo') {
       const photo = memory as any;
-      // 如果图片是 Base64 且太大，转换为缩略图
-      if (photo.imageUrl && photo.imageUrl.startsWith('data:image') && photo.imageUrl.length > 500000) {
+      
+      // 处理新格式 imageUrls
+      if (photo.imageUrls && Array.isArray(photo.imageUrls)) {
+        const cleanedUrls = photo.imageUrls.map((url: string) => {
+          if (url && url.startsWith('data:image') && url.length > 500000) {
+            return createThumbnail(url);
+          }
+          return url;
+        });
+        
         return {
           ...memory,
-          imageUrl: createThumbnail(photo.imageUrl),
+          imageUrls: cleanedUrls,
+          imageUrl: cleanedUrls[0] || undefined, // 向后兼容
+        };
+      }
+      
+      // 向后兼容：处理旧格式 imageUrl
+      if (photo.imageUrl && photo.imageUrl.startsWith('data:image') && photo.imageUrl.length > 500000) {
+        const thumbnailUrl = createThumbnail(photo.imageUrl);
+        return {
+          ...memory,
+          imageUrls: [thumbnailUrl],
+          imageUrl: thumbnailUrl,
           content: photo.content + '\n\n[原图已压缩为缩略图以节省空间]'
+        };
+      }
+      
+      // 迁移旧数据：如果只有 imageUrl 没有 imageUrls，创建 imageUrls
+      if (photo.imageUrl && !photo.imageUrls) {
+        return {
+          ...memory,
+          imageUrls: [photo.imageUrl],
         };
       }
     }

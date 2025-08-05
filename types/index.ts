@@ -19,7 +19,8 @@ export interface Conversation extends Memory {
 
 export interface Photo extends Memory {
   type: 'photo';
-  imageUrl: string;
+  imageUrls: string[];
+  imageUrl?: string; // 保持向后兼容
   location?: string;
 }
 

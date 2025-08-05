@@ -4,65 +4,69 @@ import { useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
 
 interface FileUploadProps {
-  type: 'photo' | 'video';
-  onFileUpload: (url: string) => void;
-  currentUrl?: string;
+  type: 'photo';
+  onFileUpload: (urls: string[]) => void;
+  currentUrls?: string[];
 }
 
-export default function FileUpload({ type, onFileUpload, currentUrl }: FileUploadProps) {
+export default function FileUpload({ type, onFileUpload, currentUrls = [] }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (files.length === 0) return;
 
-    // Check file size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('文件大小不能超过 10MB');
-      return;
+    const validFiles: File[] = [];
+    
+    for (const file of files) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        alert(`文件 ${file.name} 大小不能超过 10MB`);
+        continue;
+      }
+
+      // Check file type
+      if (type === 'photo' && !file.type.startsWith('image/')) {
+        alert(`请选择图片文件: ${file.name}`);
+        continue;
+      }
+      
+      validFiles.push(file);
     }
 
-    // Check file type
-    if (type === 'photo' && !file.type.startsWith('image/')) {
-      alert('请选择图片文件');
-      return;
+    if (validFiles.length > 0) {
+      setSelectedFiles(prev => [...prev, ...validFiles]);
     }
-    if (type === 'video' && !file.type.startsWith('video/')) {
-      alert('请选择视频文件');
-      return;
-    }
-
-    setSelectedFile(file);
   };
 
   const handleFileUpload = async () => {
-    if (!selectedFile) return;
+    if (selectedFiles.length === 0) return;
 
     setIsUploading(true);
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('上传失败');
-      }
-
-      const result = await response.json();
-      onFileUpload(result.url);
-      setUploadProgress(100);
+      const uploadedUrls: string[] = [];
       
-      // Clear selected file after successful upload
-      setSelectedFile(null);
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        
+        // 使用 FileReader 转为 Base64，避免上传服务器
+        const base64 = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        
+        uploadedUrls.push(base64);
+        setUploadProgress(((i + 1) / selectedFiles.length) * 100);
+      }
+      
+      onFileUpload([...currentUrls, ...uploadedUrls]);
+      setSelectedFiles([]);
     } catch (error) {
       console.error('文件上传失败:', error);
       alert('文件上传失败，请重试');
@@ -74,13 +78,12 @@ export default function FileUpload({ type, onFileUpload, currentUrl }: FileUploa
 
   const handleDrop = (event: React.DragEvent) => {
     event.preventDefault();
-    const file = event.dataTransfer.files[0];
-    if (file) {
-      const input = document.createElement('input');
-      input.type = 'file';
-      input.files = event.dataTransfer.files;
-      input.onchange = (e) => handleFileSelect(e as any);
-      input.click();
+    const files = Array.from(event.dataTransfer.files);
+    if (files.length > 0) {
+      const mockEvent = {
+        target: { files: event.dataTransfer.files }
+      } as React.ChangeEvent<HTMLInputElement>;
+      handleFileSelect(mockEvent);
     }
   };
 
@@ -99,7 +102,8 @@ export default function FileUpload({ type, onFileUpload, currentUrl }: FileUploa
         <input
           ref={fileInputRef}
           type="file"
-          accept={type === 'photo' ? 'image/*' : 'video/*'}
+          accept="image/*"
+          multiple
           onChange={handleFileSelect}
           className="hidden"
         />
@@ -123,7 +127,7 @@ export default function FileUpload({ type, onFileUpload, currentUrl }: FileUploa
                 点击上传或拖拽文件到此处
               </p>
               <p className="text-xs text-gray-500 mt-1">
-                支持 {type === 'photo' ? 'JPG、PNG' : 'MP4、MOV'} 格式，最大 10MB
+                支持 JPG、PNG 格式，最大 10MB，可多选
               </p>
             </div>
             <button
@@ -137,50 +141,64 @@ export default function FileUpload({ type, onFileUpload, currentUrl }: FileUploa
         )}
       </div>
 
-      {/* Selected File */}
-      {selectedFile && !isUploading && (
+      {/* Selected Files */}
+      {selectedFiles.length > 0 && !isUploading && (
         <div className="p-3 bg-blue-50 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
-              <p className="text-xs text-gray-500">
-                {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-              </p>
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-gray-900">已选择 {selectedFiles.length} 个文件</p>
+            <div className="space-y-1">
+              {selectedFiles.map((file, index) => (
+                <div key={index} className="flex items-center justify-between text-xs">
+                  <span className="text-gray-700 truncate">{file.name}</span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-500">{(file.size / 1024 / 1024).toFixed(2)} MB</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedFiles(prev => prev.filter((_, i) => i !== index))}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
             <button
               type="button"
               onClick={handleFileUpload}
-              className="btn-primary text-sm"
+              className="btn-primary text-sm w-full"
             >
-              上传文件
+              上传所有文件
             </button>
           </div>
         </div>
       )}
 
-      {/* Uploaded Media Preview */}
-      {currentUrl && (
-        <div className="relative">
-          {type === 'photo' ? (
-            <img
-              src={currentUrl}
-              alt="预览"
-              className="w-full h-48 object-cover rounded-lg"
-            />
-          ) : (
-            <video
-              src={currentUrl}
-              controls
-              className="w-full h-48 object-cover rounded-lg"
-            />
-          )}
-          <button
-            type="button"
-            onClick={() => onFileUpload('')}
-            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
-          >
-            <X className="h-4 w-4" />
-          </button>
+      {/* Uploaded Images Preview */}
+      {currentUrls.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-900">已上传的图片 ({currentUrls.length})</p>
+          <div className="grid grid-cols-2 gap-2">
+            {currentUrls.map((url, index) => (
+              <div key={index} className="relative">
+                <img
+                  src={url}
+                  alt={`预览 ${index + 1}`}
+                  className="w-full h-32 object-cover rounded-lg"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newUrls = currentUrls.filter((_, i) => i !== index);
+                    onFileUpload(newUrls);
+                  }}
+                  className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

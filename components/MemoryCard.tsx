@@ -112,13 +112,38 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
         </div>
       </div>
 
-      {memory.type === 'photo' && 'imageUrl' in memory && memory.imageUrl && (
+      {memory.type === 'photo' && 'imageUrls' in memory && (
         <div className="mb-4">
-          <img
-            src={memory.imageUrl}
-            alt={memory.title}
-            className="w-full h-48 object-cover rounded-lg"
-          />
+          {/* 向后兼容：先检查 imageUrls，再检查 imageUrl */}
+          {(() => {
+            const photo = memory as any;
+            const images = photo.imageUrls || (photo.imageUrl ? [photo.imageUrl] : []);
+            
+            if (images.length === 0) return null;
+            
+            if (images.length === 1) {
+              return (
+                <img
+                  src={images[0]}
+                  alt={memory.title}
+                  className="w-full h-48 object-cover rounded-lg"
+                />
+              );
+            }
+            
+            return (
+              <div className="grid grid-cols-2 gap-2">
+                {images.map((url: string, index: number) => (
+                  <img
+                    key={index}
+                    src={url}
+                    alt={`${memory.title} - ${index + 1}`}
+                    className="w-full h-32 object-cover rounded-lg"
+                  />
+                ))}
+              </div>
+            );
+          })()} 
         </div>
       )}
 

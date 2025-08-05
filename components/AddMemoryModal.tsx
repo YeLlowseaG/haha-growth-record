@@ -31,8 +31,11 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
   );
   
   // Photo specific fields
-  const [mediaUrl, setMediaUrl] = useState(
-    editingMemory?.type === 'photo' ? (editingMemory as Photo).imageUrl : ''
+  const [mediaUrls, setMediaUrls] = useState<string[]>(
+    editingMemory?.type === 'photo' ? 
+      (editingMemory as Photo).imageUrls || 
+      ((editingMemory as Photo).imageUrl ? [(editingMemory as Photo).imageUrl!] : []) 
+      : []
   );
 
   // 更新状态当editingMemory变化时
@@ -56,9 +59,10 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       }
       
       if (editingMemory.type === 'photo') {
-        setMediaUrl((editingMemory as Photo).imageUrl);
+        const photo = editingMemory as Photo;
+        setMediaUrls(photo.imageUrls || (photo.imageUrl ? [photo.imageUrl] : []));
       } else {
-        setMediaUrl('');
+        setMediaUrls([]);
       }
     } else {
       // 重置为默认值
@@ -70,7 +74,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       setChildName('哈哈');
       setAge('');
       setContext('');
-      setMediaUrl('');
+      setMediaUrls([]);
     }
   }, [editingMemory]);
 
@@ -104,7 +108,8 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
         content,
         date,
         tags: tagArray,
-        imageUrl: mediaUrl,
+        imageUrls: mediaUrls,
+        imageUrl: mediaUrls[0] || undefined, // 向后兼容
         createdAt: editingMemory?.createdAt || now,
         updatedAt: now,
       } as Photo;
@@ -123,7 +128,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
     setChildName('哈哈');
     setAge('');
     setContext('');
-    setMediaUrl('');
+    setMediaUrls([]);
     onClose();
   };
 
@@ -244,8 +249,8 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
               
               <FileUpload
                 type={type}
-                onFileUpload={setMediaUrl}
-                currentUrl={mediaUrl}
+                onFileUpload={setMediaUrls}
+                currentUrls={mediaUrls}
               />
             </div>
           )}

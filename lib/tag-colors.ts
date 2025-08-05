@@ -74,6 +74,33 @@ const tagColorMap: Record<string, TagColorConfig> = {
   '成长瞬间': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
   '可爱趣事': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
 
+  // 地铁相关标签 - 蓝色/青色系
+  '地铁': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+  '1号线': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
+  '2号线': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+  '3号线': { bg: 'bg-orange-100', text: 'text-orange-800', border: 'border-orange-200' },
+  '4号线': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+  '5号线': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
+  '6号线': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
+  '7号线': { bg: 'bg-emerald-100', text: 'text-emerald-800', border: 'border-emerald-200' },
+  '8号线': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-200' },
+  '9号线': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-200' },
+  '13号线': { bg: 'bg-pink-100', text: 'text-pink-800', border: 'border-pink-200' },
+  '14号线': { bg: 'bg-cyan-100', text: 'text-cyan-800', border: 'border-cyan-200' },
+  '21号线': { bg: 'bg-lime-100', text: 'text-lime-800', border: 'border-lime-200' },
+  'APM线': { bg: 'bg-violet-100', text: 'text-violet-800', border: 'border-violet-200' },
+  '广佛线': { bg: 'bg-rose-100', text: 'text-rose-800', border: 'border-rose-200' },
+  
+  // 地铁站点和地点标签
+  '地铁站': { bg: 'bg-cyan-100', text: 'text-cyan-800', border: 'border-cyan-200' },
+  '换乘站': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-200' },
+  '起点站': { bg: 'bg-green-100', text: 'text-green-800', border: 'border-green-200' },
+  '终点站': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
+  '打卡': { bg: 'bg-yellow-100', text: 'text-yellow-800', border: 'border-yellow-200' },
+  '探索': { bg: 'bg-purple-100', text: 'text-purple-800', border: 'border-purple-200' },
+  '旅程': { bg: 'bg-blue-100', text: 'text-blue-800', border: 'border-blue-200' },
+  '出行': { bg: 'bg-teal-100', text: 'text-teal-800', border: 'border-teal-200' },
+  
   // 其他常见标签
   '拒绝': { bg: 'bg-red-100', text: 'text-red-800', border: 'border-red-200' },
   '决策': { bg: 'bg-indigo-100', text: 'text-indigo-800', border: 'border-indigo-200' },
