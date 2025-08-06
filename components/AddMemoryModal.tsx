@@ -13,77 +13,63 @@ interface AddMemoryModalProps {
 }
 
 export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory }: AddMemoryModalProps) {
-  const [type, setType] = useState<'conversation' | 'photo'>(editingMemory?.type || 'conversation');
-  const [title, setTitle] = useState(editingMemory?.title || '');
-  const [content, setContent] = useState(editingMemory?.content || '');
-  const [date, setDate] = useState(editingMemory?.date || new Date().toISOString().split('T')[0]);
-  const [tags, setTags] = useState(editingMemory?.tags?.join(', ') || '');
+  const [type, setType] = useState<'conversation' | 'photo'>('conversation');
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [tags, setTags] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Conversation specific fields - 默认填入哈哈的信息
-  const [childName, setChildName] = useState(
-    editingMemory?.type === 'conversation' ? (editingMemory as Conversation).childName : '哈哈'
-  );
-  const [age, setAge] = useState(
-    editingMemory?.type === 'conversation' ? (editingMemory as Conversation).age : ''
-  );
-  const [context, setContext] = useState(
-    editingMemory?.type === 'conversation' ? (editingMemory as Conversation).context || '' : ''
-  );
+  const [childName, setChildName] = useState('哈哈');
+  const [age, setAge] = useState('');
+  const [context, setContext] = useState('');
   
   // Photo specific fields
-  const [mediaUrls, setMediaUrls] = useState<string[]>(
-    editingMemory?.type === 'photo' ? 
-      (editingMemory as Photo).imageUrls || 
-      ((editingMemory as Photo).imageUrl ? [(editingMemory as Photo).imageUrl!] : []) 
-      : []
-  );
-  const [location, setLocation] = useState<string>(
-    editingMemory?.type === 'photo' ? (editingMemory as Photo).location || '' : ''
-  );
+  const [mediaUrls, setMediaUrls] = useState<string[]>([]);
+  const [location, setLocation] = useState<string>('');
 
-  // 更新状态当editingMemory变化时
+  // 更新状态当弹窗打开且有editingMemory时
   useEffect(() => {
-    if (editingMemory) {
-      setType(editingMemory.type);
-      setTitle(editingMemory.title);
-      setContent(editingMemory.content);
-      setDate(editingMemory.date);
-      setTags(editingMemory.tags?.join(', ') || '');
-      
-      if (editingMemory.type === 'conversation') {
-        const conversation = editingMemory as Conversation;
-        setChildName(conversation.childName);
-        setAge(conversation.age);
-        setContext(conversation.context || '');
+    if (isOpen) {
+      if (editingMemory) {
+        // 编辑模式：填充现有数据
+        setType(editingMemory.type);
+        setTitle(editingMemory.title);
+        setContent(editingMemory.content);
+        setDate(editingMemory.date);
+        setTags(editingMemory.tags?.join(', ') || '');
+        
+        if (editingMemory.type === 'conversation') {
+          const conversation = editingMemory as Conversation;
+          setChildName(conversation.childName);
+          setAge(conversation.age || '');
+          setContext(conversation.context || '');
+          setMediaUrls([]);
+          setLocation('');
+        } else {
+          const photo = editingMemory as Photo;
+          setChildName('哈哈');
+          setAge('');
+          setContext('');
+          setMediaUrls(photo.imageUrls || (photo.imageUrl ? [photo.imageUrl] : []));
+          setLocation(photo.location || '');
+        }
       } else {
+        // 新建模式：重置为默认值
+        setType('conversation');
+        setTitle('');
+        setContent('');
+        setDate(new Date().toISOString().split('T')[0]);
+        setTags('');
         setChildName('哈哈');
         setAge('');
         setContext('');
-      }
-      
-      if (editingMemory.type === 'photo') {
-        const photo = editingMemory as Photo;
-        setMediaUrls(photo.imageUrls || (photo.imageUrl ? [photo.imageUrl] : []));
-        setLocation(photo.location || '');
-      } else {
         setMediaUrls([]);
         setLocation('');
       }
-    } else {
-      // 重置为默认值
-      setType('conversation');
-      setTitle('');
-      setContent('');
-      setDate(new Date().toISOString().split('T')[0]);
-      setTags('');
-      setChildName('哈哈');
-      setAge('');
-      setContext('');
-      setMediaUrls([]);
-      setLocation('');
     }
-  }, [editingMemory]);
+  }, [isOpen, editingMemory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,7 +115,9 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       }
       
       await onSave(memory);
-      handleClose();
+      // 保存成功后关闭弹窗
+      setIsSubmitting(false);
+      onClose();
     } catch (error) {
       console.error('保存失败:', error);
       alert('保存失败，请重试');
@@ -141,16 +129,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
   const handleClose = () => {
     if (isSubmitting) return; // 上传中禁止关闭
     
-    setType('conversation');
-    setTitle('');
-    setContent('');
-    setDate(new Date().toISOString().split('T')[0]);
-    setTags('');
-    setChildName('哈哈');
-    setAge('');
-    setContext('');
-    setMediaUrls([]);
-    setLocation('');
+    // 只重置提交状态，其他状态在下次打开时会重新设置
     setIsSubmitting(false);
     onClose();
   };
