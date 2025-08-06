@@ -15,6 +15,7 @@ export default function Home() {
   const [filteredMemories, setFilteredMemories] = useState<MemoryType[]>([]);
   const [selectedType, setSelectedType] = useState<MemoryType['type'] | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTag, setSelectedTag] = useState<string>('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingMemory, setEditingMemory] = useState<MemoryType | undefined>();
@@ -52,7 +53,7 @@ export default function Home() {
     };
   }, []);
 
-  // Filter memories based on type and search
+  // Filter memories based on type, search, and tag
   useEffect(() => {
     let mounted = true;
     
@@ -63,16 +64,21 @@ export default function Home() {
         // 如果有搜索查询，使用搜索API
         if (searchQuery.trim()) {
           filtered = await searchMemories(searchQuery);
-          // 如果还有类型筛选，进一步过滤
-          if (selectedType !== 'all') {
-            filtered = filtered.filter(memory => memory.type === selectedType);
-          }
         } else if (selectedType !== 'all') {
           // 只有类型筛选
           filtered = await getMemoriesByType(selectedType);
         } else {
-          // 没有筛选，使用已加载的数据
+          // 没有搜索和类型筛选，使用已加载的数据
           filtered = memories;
+        }
+        
+        // 在前端进行类型和标签的进一步筛选
+        if (selectedType !== 'all') {
+          filtered = filtered.filter(memory => memory.type === selectedType);
+        }
+        
+        if (selectedTag) {
+          filtered = filtered.filter(memory => memory.tags.includes(selectedTag));
         }
         
         if (mounted) {
@@ -88,10 +94,15 @@ export default function Home() {
     return () => {
       mounted = false;
     };
-  }, [memories, selectedType, searchQuery]);
+  }, [memories, selectedType, searchQuery, selectedTag]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
+  };
+
+  const handleTagClick = (tag: string) => {
+    setSelectedTag(selectedTag === tag ? '' : tag); // 点击相同标签取消筛选
+    setSearchQuery(''); // 清除搜索查询
   };
 
   const handleAddNew = () => {
@@ -251,20 +262,68 @@ export default function Home() {
               </div>
             </div>
 
+            {/* Active Filters */}
+            {(selectedTag || searchQuery) && (
+              <div className="mb-4 lg:mb-6">
+                <div className="bg-white rounded-lg p-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-sm text-gray-600">
+                      <span>筛选条件:</span>
+                      {selectedTag && (
+                        <span className="inline-flex items-center px-2 py-1 bg-primary-100 text-primary-700 rounded-full text-xs">
+                          标签: {selectedTag}
+                          <button
+                            onClick={() => setSelectedTag('')}
+                            className="ml-1 text-primary-500 hover:text-primary-700"
+                            title="清除标签筛选"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                      {searchQuery && (
+                        <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                          搜索: {searchQuery}
+                          <button
+                            onClick={() => setSearchQuery('')}
+                            className="ml-1 text-blue-500 hover:text-blue-700"
+                            title="清除搜索"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSelectedTag('');
+                        setSearchQuery('');
+                      }}
+                      className="text-xs text-gray-500 hover:text-gray-700"
+                    >
+                      清除所有筛选
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Content */}
             {filteredMemories.length === 0 ? (
               <div className="text-center py-8 lg:py-12">
                 <Inbox className="h-12 w-12 lg:h-16 lg:w-16 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-base lg:text-lg font-medium text-gray-900 mb-2">
-                  {searchQuery ? '没有找到哈哈的相关记录' : '还没有哈哈的成长记录'}
+                  {searchQuery || selectedTag ? '没有找到哈哈的相关记录' : '还没有哈哈的成长记录'}
                 </h3>
                 <p className="text-sm lg:text-base text-gray-600 mb-6 px-4">
                   {searchQuery 
                     ? '尝试使用不同的关键词搜索哈哈的记录'
+                    : selectedTag 
+                    ? `没有找到标签为"${selectedTag}"的记录，尝试其他标签`
                     : '开始记录哈哈的成长瞬间吧！'
                   }
                 </p>
-                {!searchQuery && (
+                {!searchQuery && !selectedTag && (
                   <div className="space-y-3 px-4">
                     <button
                       onClick={handleAddNew}
@@ -291,6 +350,7 @@ export default function Home() {
                     memory={memory}
                     onEdit={handleEditMemory}
                     onDelete={handleDeleteMemory}
+                    onTagClick={handleTagClick}
                   />
                 ))}
               </div>

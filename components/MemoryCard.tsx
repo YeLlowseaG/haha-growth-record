@@ -11,9 +11,10 @@ interface MemoryCardProps {
   memory: MemoryType;
   onEdit: (memory: MemoryType) => void;
   onDelete: (id: string) => void;
+  onTagClick?: (tag: string) => void;
 }
 
-export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps) {
+export default function MemoryCard({ memory, onEdit, onDelete, onTagClick }: MemoryCardProps) {
   const [showFullContent, setShowFullContent] = useState(false);
 
   const getTypeIcon = () => {
@@ -177,12 +178,14 @@ export default function MemoryCard({ memory, onEdit, onDelete }: MemoryCardProps
           <Tag className="h-3 w-3 sm:h-4 sm:w-4 text-gray-400 mt-1 flex-shrink-0" />
           <div className="flex flex-wrap gap-1 min-w-0">
             {memory.tags.map((tag, index) => (
-              <span
+              <button
                 key={index}
-                className={`${getTagClasses(tag)} text-xs`}
+                onClick={() => onTagClick?.(tag)}
+                className={`${getTagClasses(tag)} text-xs hover:opacity-80 transition-opacity cursor-pointer`}
+                title={`筛选标签：${tag}`}
               >
                 {tag}
-              </span>
+              </button>
             ))}
           </div>
         </div>
