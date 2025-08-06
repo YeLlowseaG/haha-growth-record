@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, MessageCircle, Camera, Tag } from 'lucide-react';
-import FileUpload from './FileUpload';
+import FileUpload, { PhotoMetadata } from './FileUpload';
 import { MemoryType, Conversation, Photo } from '@/types';
 
 interface AddMemoryModalProps {
@@ -38,6 +38,9 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       ((editingMemory as Photo).imageUrl ? [(editingMemory as Photo).imageUrl!] : []) 
       : []
   );
+  const [location, setLocation] = useState<string>(
+    editingMemory?.type === 'photo' ? (editingMemory as Photo).location || '' : ''
+  );
 
   // 更新状态当editingMemory变化时
   useEffect(() => {
@@ -62,8 +65,10 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       if (editingMemory.type === 'photo') {
         const photo = editingMemory as Photo;
         setMediaUrls(photo.imageUrls || (photo.imageUrl ? [photo.imageUrl] : []));
+        setLocation(photo.location || '');
       } else {
         setMediaUrls([]);
+        setLocation('');
       }
     } else {
       // 重置为默认值
@@ -76,6 +81,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       setAge('');
       setContext('');
       setMediaUrls([]);
+      setLocation('');
     }
   }, [editingMemory]);
 
@@ -116,6 +122,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
           tags: tagArray,
           imageUrls: mediaUrls,
           imageUrl: mediaUrls[0] || undefined, // 向后兼容
+          location: location || undefined,
           createdAt: editingMemory?.createdAt || now,
           updatedAt: now,
         } as Photo;
@@ -143,8 +150,27 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
     setAge('');
     setContext('');
     setMediaUrls([]);
+    setLocation('');
     setIsSubmitting(false);
     onClose();
+  };
+
+  // 处理照片元数据信息
+  const handleMetadataExtracted = (metadata: PhotoMetadata) => {
+    // 如果提取到了拍摄时间，自动填充日期字段
+    if (metadata.dateTaken && !editingMemory) {
+      setDate(metadata.dateTaken);
+    }
+    
+    // 如果没有编辑现有记录，且提取到了位置信息
+    if (metadata.location && !editingMemory) {
+      setLocation(metadata.location);
+      console.log('照片拍摄位置:', metadata.location);
+      
+      if (metadata.coordinates) {
+        console.log('GPS坐标:', metadata.coordinates);
+      }
+    }
   };
 
   if (!isOpen) return null;
@@ -270,8 +296,26 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
               <FileUpload
                 type={type}
                 onFileUpload={setMediaUrls}
+                onMetadataExtracted={handleMetadataExtracted}
                 currentUrls={mediaUrls}
               />
+              
+              {/* Location field for photos */}
+              <div className="mt-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">拍摄地点（可选）</label>
+                <input
+                  type="text"
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                  placeholder="例如：家里客厅、公园、学校..."
+                />
+                {location && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    📍 位置信息会自动从照片中提取，您也可以手动修改
+                  </p>
+                )}
+              </div>
             </div>
           )}
 

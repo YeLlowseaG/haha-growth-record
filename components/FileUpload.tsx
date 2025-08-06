@@ -2,20 +2,97 @@
 
 import { useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
+import EXIF from 'exif-js';
+
+export interface PhotoMetadata {
+  dateTaken?: string;
+  location?: string;
+  coordinates?: {
+    latitude: number;
+    longitude: number;
+  };
+}
 
 interface FileUploadProps {
   type: 'photo';
   onFileUpload: (urls: string[]) => void;
+  onMetadataExtracted?: (metadata: PhotoMetadata) => void;
   currentUrls?: string[];
 }
 
-export default function FileUpload({ type, onFileUpload, currentUrls = [] }: FileUploadProps) {
+export default function FileUpload({ type, onFileUpload, onMetadataExtracted, currentUrls = [] }: FileUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // 提取照片EXIF信息
+  const extractPhotoMetadata = async (file: File): Promise<PhotoMetadata> => {
+    return new Promise((resolve, reject) => {
+      // 创建一个img元素来读取文件
+      const img = new Image();
+      img.onload = function() {
+        EXIF.getData(img as any, function(this: any) {
+          const metadata: PhotoMetadata = {};
+          
+          // 提取拍摄时间
+          const dateTime = EXIF.getTag(this, 'DateTime') || EXIF.getTag(this, 'DateTimeOriginal');
+          if (dateTime) {
+            // EXIF日期格式: "YYYY:MM:DD HH:MM:SS" -> "YYYY-MM-DD"
+            const datePart = dateTime.split(' ')[0];
+            metadata.dateTaken = datePart ? datePart.replace(/:/g, '-') : undefined;
+          }
+          
+          // 提取GPS坐标
+          const lat = EXIF.getTag(this, 'GPSLatitude');
+          const latRef = EXIF.getTag(this, 'GPSLatitudeRef');
+          const lon = EXIF.getTag(this, 'GPSLongitude');
+          const lonRef = EXIF.getTag(this, 'GPSLongitudeRef');
+          
+          if (lat && lon && latRef && lonRef) {
+            const latitude = convertDMSToDD(lat, latRef);
+            const longitude = convertDMSToDD(lon, lonRef);
+            
+            if (latitude !== null && longitude !== null) {
+              metadata.coordinates = { latitude, longitude };
+              // 可以在这里调用反向地理编码API获取地址
+              // 但为了简单起见，先只保存坐标
+              metadata.location = `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`;
+            }
+          }
+          
+          resolve(metadata);
+        });
+      };
+      
+      img.onerror = () => {
+        resolve({}); // 如果图片加载失败，返回空的metadata
+      };
+      
+      // 将文件转换为URL供img元素使用
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        if (e.target?.result) {
+          img.src = e.target.result as string;
+        } else {
+          resolve({});
+        }
+      };
+      reader.onerror = () => resolve({});
+      reader.readAsDataURL(file);
+    });
+  };
+
+  // 将GPS的度分秒格式转换为十进制度数
+  const convertDMSToDD = (dms: number[], ref: string): number | null => {
+    if (!dms || dms.length !== 3) return null;
+    
+    let dd = dms[0] + dms[1] / 60 + dms[2] / 3600;
+    if (ref === 'S' || ref === 'W') dd = dd * -1;
+    return dd;
+  };
+
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     if (files.length === 0) return;
 
@@ -39,6 +116,16 @@ export default function FileUpload({ type, onFileUpload, currentUrls = [] }: Fil
 
     if (validFiles.length > 0) {
       setSelectedFiles(prev => [...prev, ...validFiles]);
+      
+      // 提取第一张照片的EXIF信息
+      if (validFiles.length > 0 && onMetadataExtracted) {
+        try {
+          const metadata = await extractPhotoMetadata(validFiles[0]);
+          onMetadataExtracted(metadata);
+        } catch (error) {
+          console.warn('提取照片元数据失败:', error);
+        }
+      }
     }
   };
 
