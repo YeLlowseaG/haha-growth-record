@@ -74,11 +74,11 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
 
   // 当日期变化时，自动更新年龄显示
   useEffect(() => {
-    if (type === 'conversation' && date && !editingMemory) {
+    if (type === 'conversation' && date) {
       const calculatedAge = calculateHahaAgeAtDate(date);
       setAge(calculatedAge);
     }
-  }, [date, type, editingMemory]);
+  }, [date, type]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,7 +223,10 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                日期
+                <span className="text-xs text-gray-500 ml-1">(用于年龄计算和排序)</span>
+              </label>
               <input
                 type="date"
                 value={date}
@@ -254,9 +257,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   年龄 
-                  {!editingMemory && (
-                    <span className="text-xs text-gray-500 ml-1">(根据日期自动计算)</span>
-                  )}
+                  <span className="text-xs text-gray-500 ml-1">(根据日期自动计算)</span>
                 </label>
                 <input
                   type="text"
@@ -265,9 +266,9 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
                   placeholder="例如：2岁3个月"
                 />
-                {!editingMemory && age && (
+                {age && (
                   <p className="text-xs text-gray-500 mt-1">
-                    💡 年龄已根据哈哈的生日(2019年7月19日)和记录日期自动计算
+                    💡 年龄已根据哈哈的生日(2019年7月19日)和上方日期自动计算
                   </p>
                 )}
               </div>
