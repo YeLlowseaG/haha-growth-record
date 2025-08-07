@@ -62,7 +62,6 @@ export default function UpdateAgesPage() {
                 📅 年龄计算说明
               </h3>
               <ul className="text-blue-800 space-y-1 text-sm">
-                <li>• 哈哈的生日：2019年7月19日</li>
                 <li>• 将根据每条记录的日期重新计算准确年龄</li>
                 <li>• 只更新计算结果与现有数据不同的记录</li>
                 <li>• 操作是安全的，可以随时执行</li>

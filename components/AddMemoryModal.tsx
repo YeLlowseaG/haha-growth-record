@@ -268,7 +268,7 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
                 />
                 {age && (
                   <p className="text-xs text-gray-500 mt-1">
-                    💡 年龄已根据哈哈的生日(2019年7月19日)和上方日期自动计算
+                    💡 年龄已根据记录日期自动计算
                   </p>
                 )}
               </div>
