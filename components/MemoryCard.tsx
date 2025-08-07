@@ -81,11 +81,6 @@ export default function MemoryCard({ memory, onEdit, onDelete, onTagClick }: Mem
           <div className="text-sm text-gray-600 mb-2">
             <span className="text-gray-500">
               年龄: {calculateHahaAgeAtDate(memory.date)}
-              {memory.age && memory.age !== calculateHahaAgeAtDate(memory.date) && (
-                <span className="text-gray-400 ml-2">
-                  (记录时填写: {memory.age})
-                </span>
-              )}
             </span>
           </div>
         )}
