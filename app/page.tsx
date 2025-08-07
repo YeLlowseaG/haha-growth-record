@@ -9,6 +9,7 @@ import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
 import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType, initDatabase, PaginatedResponse } from '@/lib/storage';
 import { Inbox, Smile, Download } from 'lucide-react';
+import { getCurrentHahaAge } from '@/lib/age-utils';
 
 export default function Home() {
   const [memories, setMemories] = useState<MemoryType[]>([]);
@@ -222,7 +223,7 @@ export default function Home() {
               <>
             {/* Stats */}
             <div className="mb-4 lg:mb-6">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 lg:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 lg:gap-4">
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -255,6 +256,18 @@ export default function Home() {
                     <div className="ml-4">
                       <p className="text-sm font-medium text-gray-600">哈哈的照片</p>
                       <p className="text-2xl font-bold text-green-600">{typeCounts.photo}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white rounded-lg p-4 shadow-sm">
+                  <div className="flex items-center">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <Smile className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <div className="ml-4">
+                      <p className="text-sm font-medium text-gray-600">哈哈现在</p>
+                      <p className="text-2xl font-bold text-orange-600">{getCurrentHahaAge()}</p>
                     </div>
                   </div>
                 </div>

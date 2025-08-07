@@ -6,6 +6,7 @@ import { zhCN } from 'date-fns/locale';
 import { MessageCircle, Camera, Edit, Trash2, Tag } from 'lucide-react';
 import { MemoryType } from '@/types';
 import { getTagClasses } from '@/lib/tag-colors';
+import { calculateHahaAgeAtDate } from '@/lib/age-utils';
 
 interface MemoryCardProps {
   memory: MemoryType;
@@ -76,9 +77,16 @@ export default function MemoryCard({ memory, onEdit, onDelete, onTagClick }: Mem
       <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{memory.title}</h3>
       
       <div className="mb-4">
-        {memory.type === 'conversation' && 'age' in memory && memory.age && (
+        {memory.type === 'conversation' && (
           <div className="text-sm text-gray-600 mb-2">
-            <span className="text-gray-500">年龄: {memory.age}</span>
+            <span className="text-gray-500">
+              年龄: {calculateHahaAgeAtDate(memory.date)}
+              {memory.age && memory.age !== calculateHahaAgeAtDate(memory.date) && (
+                <span className="text-gray-400 ml-2">
+                  (记录时填写: {memory.age})
+                </span>
+              )}
+            </span>
           </div>
         )}
         

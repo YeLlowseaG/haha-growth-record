@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, MessageCircle, Camera, Tag } from 'lucide-react';
 import FileUpload, { PhotoMetadata } from './FileUpload';
 import { MemoryType, Conversation, Photo } from '@/types';
+import { calculateHahaAgeAtDate, getCurrentHahaAge } from '@/lib/age-utils';
 
 interface AddMemoryModalProps {
   isOpen: boolean;
@@ -70,6 +71,14 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
       }
     }
   }, [isOpen, editingMemory]);
+
+  // 当日期变化时，自动更新年龄显示
+  useEffect(() => {
+    if (type === 'conversation' && date && !editingMemory) {
+      const calculatedAge = calculateHahaAgeAtDate(date);
+      setAge(calculatedAge);
+    }
+  }, [date, type, editingMemory]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +252,12 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
           {type === 'conversation' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">年龄</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  年龄 
+                  {!editingMemory && (
+                    <span className="text-xs text-gray-500 ml-1">(根据日期自动计算)</span>
+                  )}
+                </label>
                 <input
                   type="text"
                   value={age}
@@ -251,6 +265,11 @@ export default function AddMemoryModal({ isOpen, onClose, onSave, editingMemory 
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
                   placeholder="例如：2岁3个月"
                 />
+                {!editingMemory && age && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    💡 年龄已根据哈哈的生日(2019年7月19日)和记录日期自动计算
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">对话背景（可选）</label>
