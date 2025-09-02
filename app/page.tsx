@@ -4,11 +4,12 @@ import { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
 import MemoryCard from '@/components/MemoryCard';
+import TimelineView from '@/components/TimelineView';
 import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
 import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType, initDatabase, PaginatedResponse } from '@/lib/storage';
-import { Inbox, Smile, Download } from 'lucide-react';
+import { Inbox, Smile, Download, Grid3X3, Calendar } from 'lucide-react';
 import { getCurrentHahaAge } from '@/lib/age-utils';
 
 export default function Home() {
@@ -21,6 +22,7 @@ export default function Home() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingMemory, setEditingMemory] = useState<MemoryType | undefined>();
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'timeline'>('grid');
 
   // Load memories on component mount
   useEffect(() => {
@@ -221,8 +223,37 @@ export default function Home() {
               </div>
             ) : (
               <>
-            {/* Stats */}
+            {/* View Toggle and Stats */}
             <div className="mb-4 lg:mb-6">
+              {/* View Toggle */}
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-semibold text-gray-900">哈哈的成长记录</h2>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      viewMode === 'grid'
+                        ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Grid3X3 className="h-4 w-4" />
+                    <span>网格视图</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('timeline')}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      viewMode === 'timeline'
+                        ? 'bg-primary-100 text-primary-700 border border-primary-200'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    <Calendar className="h-4 w-4" />
+                    <span>时间轴</span>
+                  </button>
+                </div>
+              </div>
+              
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 lg:gap-4">
                 <div className="bg-white rounded-lg p-4 shadow-sm">
                   <div className="flex items-center">
@@ -356,17 +387,28 @@ export default function Home() {
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
-                {filteredMemories.map((memory) => (
-                  <MemoryCard
-                    key={memory.id}
-                    memory={memory}
+              <>
+                {viewMode === 'grid' ? (
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 lg:gap-6">
+                    {filteredMemories.map((memory) => (
+                      <MemoryCard
+                        key={memory.id}
+                        memory={memory}
+                        onEdit={handleEditMemory}
+                        onDelete={handleDeleteMemory}
+                        onTagClick={handleTagClick}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <TimelineView
+                    memories={filteredMemories}
                     onEdit={handleEditMemory}
                     onDelete={handleDeleteMemory}
                     onTagClick={handleTagClick}
                   />
-                ))}
-              </div>
+                )}
+              </>
             )}
               </>
             )}
