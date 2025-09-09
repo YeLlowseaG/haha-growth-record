@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Filter, Search, CheckCircle2, Circle, Clock, AlertCircle, Edit, Trash2, Tag } from 'lucide-react';
 import { Todo } from '@/types';
+import AddTodoModal from '@/components/AddTodoModal';
+import { loadTodos, addTodo as addTodoAPI, updateTodo as updateTodoAPI, deleteTodo as deleteTodoAPI, toggleTodoStatus } from '@/lib/todo-storage';
 
 export default function TodosPage() {
   const [todos, setTodos] = useState<Todo[]>([]);
@@ -12,60 +14,23 @@ export default function TodosPage() {
   const [statusFilter, setStatusFilter] = useState<Todo['status'] | 'all'>('all');
   const [priorityFilter, setPriorityFilter] = useState<Todo['priority'] | 'all'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingTodo, setEditingTodo] = useState<Todo | undefined>();
 
-  // 模拟数据
+  // 加载待办事项数据
   useEffect(() => {
-    const mockTodos: Todo[] = [
-      {
-        id: '1',
-        title: '完成数学作业',
-        description: '完成第3章的练习题',
-        priority: 'high',
-        status: 'pending',
-        dueDate: '2024-09-03',
-        tags: ['学习', '数学'],
-        createdAt: '2024-09-01',
-        updatedAt: '2024-09-01'
-      },
-      {
-        id: '2',
-        title: '整理房间',
-        description: '把书桌和衣柜整理干净',
-        priority: 'medium',
-        status: 'in_progress',
-        tags: ['生活', '整理'],
-        createdAt: '2024-09-01',
-        updatedAt: '2024-09-01'
-      },
-      {
-        id: '3',
-        title: '练习钢琴',
-        description: '练习《小星星》30分钟',
-        priority: 'low',
-        status: 'completed',
-        completedAt: '2024-09-01',
-        tags: ['音乐', '练习'],
-        createdAt: '2024-08-30',
-        updatedAt: '2024-09-01'
-      },
-      {
-        id: '4',
-        title: '阅读课外书',
-        description: '阅读《小王子》第5章',
-        priority: 'medium',
-        status: 'pending',
-        dueDate: '2024-09-05',
-        tags: ['阅读', '学习'],
-        createdAt: '2024-09-01',
-        updatedAt: '2024-09-01'
+    const fetchTodos = async () => {
+      try {
+        const response = await loadTodos(1, 100); // 加载所有待办事项
+        setTodos(response.todos);
+        setFilteredTodos(response.todos);
+      } catch (error) {
+        console.error('加载待办事项失败:', error);
+      } finally {
+        setIsLoading(false);
       }
-    ];
+    };
     
-    setTimeout(() => {
-      setTodos(mockTodos);
-      setFilteredTodos(mockTodos);
-      setIsLoading(false);
-    }, 500);
+    fetchTodos();
   }, []);
 
   // 筛选逻辑
@@ -134,25 +99,53 @@ export default function TodosPage() {
     }
   };
 
-  const toggleTodoStatus = (id: string) => {
-    setTodos(todos.map(todo => {
-      if (todo.id === id) {
-        const newStatus = todo.status === 'completed' ? 'pending' : 'completed';
-        return {
-          ...todo,
-          status: newStatus,
-          completedAt: newStatus === 'completed' ? new Date().toISOString() : undefined,
-          updatedAt: new Date().toISOString()
-        };
-      }
-      return todo;
-    }));
+  const handleToggleTodoStatus = async (id: string) => {
+    const todo = todos.find(t => t.id === id);
+    if (!todo) return;
+    
+    const updatedTodo = await toggleTodoStatus(id, todo.status);
+    if (updatedTodo) {
+      setTodos(todos.map(t => t.id === id ? updatedTodo : t));
+    }
   };
 
-  const deleteTodo = (id: string) => {
-    if (confirm('确定要删除这个待办事项吗？')) {
-      setTodos(todos.filter(todo => todo.id !== id));
+  const handleAddTodo = async (todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newTodo = await addTodoAPI(todoData);
+    if (newTodo) {
+      setTodos([newTodo, ...todos]);
     }
+  };
+
+  const handleUpdateTodo = async (todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (!editingTodo) return;
+    
+    const updatedTodo = await updateTodoAPI(editingTodo.id, todoData);
+    if (updatedTodo) {
+      setTodos(todos.map(todo => todo.id === editingTodo.id ? updatedTodo : todo));
+      setEditingTodo(undefined);
+    }
+  };
+
+  const handleSaveTodo = async (todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingTodo) {
+      await handleUpdateTodo(todoData);
+    } else {
+      await handleAddTodo(todoData);
+    }
+  };
+
+  const handleDeleteTodo = async (id: string) => {
+    if (confirm('确定要删除这个待办事项吗？')) {
+      const success = await deleteTodoAPI(id);
+      if (success) {
+        setTodos(todos.filter(todo => todo.id !== id));
+      }
+    }
+  };
+
+  const editTodo = (todo: Todo) => {
+    setEditingTodo(todo);
+    setIsAddModalOpen(true);
   };
 
   const isOverdue = (dueDate?: string) => {
@@ -188,7 +181,10 @@ export default function TodosPage() {
               <p className="text-gray-600">管理哈哈的待办任务</p>
             </div>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setEditingTodo(undefined);
+                setIsAddModalOpen(true);
+              }}
               className="btn-primary flex items-center space-x-2"
             >
               <Plus className="h-4 w-4" />
@@ -312,7 +308,10 @@ export default function TodosPage() {
             </p>
             {(!searchQuery && statusFilter === 'all' && priorityFilter === 'all') && (
               <button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={() => {
+                  setEditingTodo(undefined);
+                  setIsAddModalOpen(true);
+                }}
                 className="btn-primary"
               >
                 添加第一个待办事项
@@ -331,7 +330,7 @@ export default function TodosPage() {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-3 flex-1">
                     <button
-                      onClick={() => toggleTodoStatus(todo.id)}
+                      onClick={() => handleToggleTodoStatus(todo.id)}
                       className="mt-1 text-gray-400 hover:text-primary-600 transition-colors"
                     >
                       {todo.status === 'completed' ? (
@@ -398,14 +397,14 @@ export default function TodosPage() {
                   
                   <div className="flex items-center space-x-1 ml-4">
                     <button
-                      onClick={() => console.log('编辑', todo.id)}
+                      onClick={() => editTodo(todo)}
                       className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
                       title="编辑"
                     >
                       <Edit className="h-4 w-4" />
                     </button>
                     <button
-                      onClick={() => deleteTodo(todo.id)}
+                      onClick={() => handleDeleteTodo(todo.id)}
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                       title="删除"
                     >
@@ -417,6 +416,17 @@ export default function TodosPage() {
             ))}
           </div>
         )}
+
+        {/* 添加/编辑待办事项弹窗 */}
+        <AddTodoModal
+          isOpen={isAddModalOpen}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingTodo(undefined);
+          }}
+          onSave={handleSaveTodo}
+          editingTodo={editingTodo}
+        />
       </div>
     </div>
   );
