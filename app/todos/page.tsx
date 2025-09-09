@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Filter, Search, CheckCircle2, Circle, Clock, AlertCircle, Edit, Trash2, Tag } from 'lucide-react';
 import { Todo } from '@/types';
 import AddTodoModal from '@/components/AddTodoModal';
+import Toast, { ToastType } from '@/components/Toast';
 import { loadTodos, addTodo as addTodoAPI, updateTodo as updateTodoAPI, deleteTodo as deleteTodoAPI, toggleTodoStatus } from '@/lib/todo-storage';
 
 export default function TodosPage() {
@@ -15,6 +16,7 @@ export default function TodosPage() {
   const [priorityFilter, setPriorityFilter] = useState<Todo['priority'] | 'all'>('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<Todo | undefined>();
+  const [toast, setToast] = useState<{ message: string; type: ToastType } | null>(null);
 
   // 加载待办事项数据
   useEffect(() => {
@@ -32,6 +34,10 @@ export default function TodosPage() {
     
     fetchTodos();
   }, []);
+
+  const showToast = (message: string, type: ToastType) => {
+    setToast({ message, type });
+  };
 
   // 筛选逻辑
   useEffect(() => {
@@ -113,6 +119,10 @@ export default function TodosPage() {
     const newTodo = await addTodoAPI(todoData);
     if (newTodo) {
       setTodos([newTodo, ...todos]);
+      showToast('待办事项添加成功！', 'success');
+    } else {
+      showToast('添加失败，请重试', 'error');
+      throw new Error('添加失败');
     }
   };
 
@@ -123,6 +133,10 @@ export default function TodosPage() {
     if (updatedTodo) {
       setTodos(todos.map(todo => todo.id === editingTodo.id ? updatedTodo : todo));
       setEditingTodo(undefined);
+      showToast('待办事项更新成功！', 'success');
+    } else {
+      showToast('更新失败，请重试', 'error');
+      throw new Error('更新失败');
     }
   };
 
@@ -139,6 +153,9 @@ export default function TodosPage() {
       const success = await deleteTodoAPI(id);
       if (success) {
         setTodos(todos.filter(todo => todo.id !== id));
+        showToast('待办事项删除成功！', 'success');
+      } else {
+        showToast('删除失败，请重试', 'error');
       }
     }
   };
@@ -427,6 +444,15 @@ export default function TodosPage() {
           onSave={handleSaveTodo}
           editingTodo={editingTodo}
         />
+
+        {/* Toast 通知 */}
+        {toast && (
+          <Toast
+            message={toast.message}
+            type={toast.type}
+            onClose={() => setToast(null)}
+          />
+        )}
       </div>
     </div>
   );

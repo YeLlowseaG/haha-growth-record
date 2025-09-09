@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Plus, Calendar, Flag, Tag } from 'lucide-react';
+import { X, Plus, Calendar, Flag, Tag, Loader2 } from 'lucide-react';
 import { Todo } from '@/types';
 
 interface AddTodoModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave: (todo: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
   editingTodo?: Todo;
 }
 
@@ -19,6 +19,7 @@ export default function AddTodoModal({ isOpen, onClose, onSave, editingTodo }: A
   const [dueDate, setDueDate] = useState('');
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (editingTodo) {
@@ -38,27 +39,38 @@ export default function AddTodoModal({ isOpen, onClose, onSave, editingTodo }: A
       setTags([]);
     }
     setNewTag('');
+    setIsSubmitting(false);
   }, [editingTodo, isOpen]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || isSubmitting) return;
 
-    const todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'> = {
-      title: title.trim(),
-      description: description.trim() || undefined,
-      priority,
-      status,
-      dueDate: dueDate || undefined,
-      tags,
-      completedAt: status === 'completed' ? new Date().toISOString() : undefined
-    };
+    setIsSubmitting(true);
 
-    onSave(todoData);
-    handleClose();
+    try {
+      const todoData: Omit<Todo, 'id' | 'createdAt' | 'updatedAt'> = {
+        title: title.trim(),
+        description: description.trim() || undefined,
+        priority,
+        status,
+        dueDate: dueDate || undefined,
+        tags,
+        completedAt: status === 'completed' ? new Date().toISOString() : undefined
+      };
+
+      await onSave(todoData);
+      handleClose();
+    } catch (error) {
+      console.error('保存失败:', error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleClose = () => {
+    if (isSubmitting) return; // 防止提交过程中关闭
+    
     setTitle('');
     setDescription('');
     setPriority('medium');
@@ -66,6 +78,7 @@ export default function AddTodoModal({ isOpen, onClose, onSave, editingTodo }: A
     setDueDate('');
     setTags([]);
     setNewTag('');
+    setIsSubmitting(false);
     onClose();
   };
 
@@ -232,15 +245,30 @@ export default function AddTodoModal({ isOpen, onClose, onSave, editingTodo }: A
             <button
               type="button"
               onClick={handleClose}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={isSubmitting}
+              className={`flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg transition-colors ${
+                isSubmitting 
+                  ? 'opacity-50 cursor-not-allowed' 
+                  : 'hover:bg-gray-50'
+              }`}
             >
               取消
             </button>
             <button
               type="submit"
-              className="flex-1 btn-primary"
+              disabled={isSubmitting || !title.trim()}
+              className={`flex-1 btn-primary flex items-center justify-center space-x-2 ${
+                isSubmitting || !title.trim() ? 'opacity-50 cursor-not-allowed' : ''
+              }`}
             >
-              {editingTodo ? '更新' : '添加'}
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>{editingTodo ? '更新中...' : '添加中...'}</span>
+                </>
+              ) : (
+                <span>{editingTodo ? '更新' : '添加'}</span>
+              )}
             </button>
           </div>
         </form>
