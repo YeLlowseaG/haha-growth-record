@@ -1,5 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
+import MainNavigation from '@/components/MainNavigation'
 
 export const metadata: Metadata = {
   title: '哈哈的成长记录',
@@ -14,7 +15,12 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <body className="bg-gray-50 min-h-screen">
-        {children}
+        <div className="flex">
+          <MainNavigation />
+          <main className="flex-1 lg:ml-0">
+            {children}
+          </main>
+        </div>
       </body>
     </html>
   )

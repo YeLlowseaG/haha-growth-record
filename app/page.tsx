@@ -1,15 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Header from '@/components/Header';
-import Sidebar from '@/components/Sidebar';
 import MemoryCard from '@/components/MemoryCard';
 import TimelineView from '@/components/TimelineView';
+import DreamsWidget from '@/components/DreamsWidget';
 import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
 import { loadMemories, addMemory, updateMemory, deleteMemory, searchMemories, getMemoriesByType, initDatabase, PaginatedResponse } from '@/lib/storage';
-import { Inbox, Smile, Download, Grid3X3, Calendar } from 'lucide-react';
+import { Inbox, Smile, Download, Grid3X3, Calendar, Plus } from 'lucide-react';
 import { getCurrentHahaAge } from '@/lib/age-utils';
 
 export default function Home() {
@@ -175,12 +174,49 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header onSearch={handleSearch} onAddNew={handleAddNew} />
-      
-      <div className="flex flex-col lg:flex-row">
-        {/* 移动端侧边栏 */}
-        <div className="lg:hidden">
-          <div className="bg-white border-b border-gray-200 p-4">
+      <div className="p-4 lg:p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* 页面标题和操作 */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">哈哈的成长记录</h1>
+                <p className="text-gray-600">记录Harvest的每一个可爱瞬间</p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={handleAddNew}
+                  className="btn-primary flex items-center space-x-2"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>记录哈哈</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* 搜索栏 */}
+            <div className="relative max-w-md">
+              <input
+                type="text"
+                placeholder="搜索哈哈的成长记录..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              />
+              <Inbox className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            </div>
+          </div>
+
+          {/* 梦想组件 */}
+          <div className="mb-6">
+            <DreamsWidget 
+              onAddDream={() => console.log('添加梦想')}
+              onEditDream={(dream) => console.log('编辑梦想', dream)}
+            />
+          </div>
+
+          {/* 筛选标签 */}
+          <div className="mb-6">
             <div className="flex space-x-2 overflow-x-auto">
               {[
                 { type: 'all' as const, label: '全部', count: memories.length },
@@ -201,33 +237,18 @@ export default function Home() {
               ))}
             </div>
           </div>
-        </div>
-        
-        {/* 桌面系统侧边栏 */}
-        <div className="hidden lg:block">
-          <Sidebar
-            selectedType={selectedType}
-            onTypeChange={setSelectedType}
-            totalCount={memories.length}
-            typeCounts={typeCounts}
-          />
-        </div>
-        
-        <main className="flex-1 p-4 lg:p-6">
-          <div className="max-w-6xl mx-auto">
-            {/* Loading State */}
-            {isLoading ? (
-              <div className="text-center py-12">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
-                <p className="text-gray-600">正在加载哈哈的记录...</p>
-              </div>
-            ) : (
-              <>
-            {/* View Toggle and Stats */}
-            <div className="mb-4 lg:mb-6">
+
+          {/* Loading State */}
+          {isLoading ? (
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">正在加载哈哈的记录...</p>
+            </div>
+          ) : (
+            <>
               {/* View Toggle */}
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">哈哈的成长记录</h2>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-gray-900">成长记录</h2>
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setViewMode('grid')}
@@ -253,58 +274,6 @@ export default function Home() {
                   </button>
                 </div>
               </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 lg:gap-4">
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Smile className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">哈哈的记录总数</p>
-                      <p className="text-2xl font-bold text-gray-900">{memories.length}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Smile className="h-6 w-6 text-blue-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">哈哈的对话</p>
-                      <p className="text-2xl font-bold text-blue-600">{typeCounts.conversation}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <Smile className="h-6 w-6 text-green-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">哈哈的照片</p>
-                      <p className="text-2xl font-bold text-green-600">{typeCounts.photo}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-white rounded-lg p-4 shadow-sm">
-                  <div className="flex items-center">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <Smile className="h-6 w-6 text-orange-600" />
-                    </div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">哈哈现在</p>
-                      <p className="text-2xl font-bold text-orange-600">{getCurrentHahaAge()}</p>
-                    </div>
-                  </div>
-                </div>
-                
-              </div>
-            </div>
 
             {/* Active Filters */}
             {(selectedTag || searchQuery) && (
@@ -412,8 +381,7 @@ export default function Home() {
             )}
               </>
             )}
-          </div>
-        </main>
+        </div>
       </div>
 
       <AddMemoryModal
@@ -428,7 +396,6 @@ export default function Home() {
         onClose={() => setIsImportOpen(false)}
         onImport={handleImportMemories}
       />
-
     </div>
   );
 } 
