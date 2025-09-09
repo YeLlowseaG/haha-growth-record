@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import MemoryCard from '@/components/MemoryCard';
 import TimelineView from '@/components/TimelineView';
-import DreamsWidget from '@/components/DreamsWidget';
 import AddMemoryModal from '@/components/AddMemoryModal';
 import ImportDialog from '@/components/ImportDialog';
 import { MemoryType, Conversation } from '@/types';
@@ -205,14 +204,6 @@ export default function Home() {
               />
               <Inbox className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
             </div>
-          </div>
-
-          {/* 梦想组件 */}
-          <div className="mb-6">
-            <DreamsWidget 
-              onAddDream={() => console.log('添加梦想')}
-              onEditDream={(dream) => console.log('编辑梦想', dream)}
-            />
           </div>
 
           {/* 筛选标签 */}
